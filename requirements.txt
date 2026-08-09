@@ -1,6 +1,8 @@
 akshare
+fastapi
 matplotlib
 numpy
 pandas
 requests
 streamlit
+uvicorn
