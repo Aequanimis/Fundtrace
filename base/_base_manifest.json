@@ -1,0 +1,24 @@
+{
+  "fetched_at": "2026-08-06T19:05:37.274436",
+  "items": {
+    "industry_list": {
+      "ok": true,
+      "n": 31,
+      "source": "api"
+    },
+    "industry_index": {
+      "ok": true,
+      "n_industries": 31
+    },
+    "stock_industry_map": {
+      "ok": true,
+      "mode": "hist_clf_rebuilt",
+      "n": 5876,
+      "failed_constituent_indexes": []
+    },
+    "benchmark_weight": {
+      "ok": false,
+      "err": "csindex 接口本环境超时，overweight 暂不可用（非硬依赖）"
+    }
+  }
+}

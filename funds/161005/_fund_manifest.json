@@ -1,0 +1,21 @@
+{
+  "fund_code": "161005",
+  "fetched_at": "2026-08-07T22:55:03.312749",
+  "mode": "manual",
+  "items": {
+    "nav": {
+      "ok": true,
+      "note": "含 nav_adj 复权净值"
+    },
+    "holdings": {
+      "ok": true
+    },
+    "industry_alloc": {
+      "ok": true
+    },
+    "aum": {
+      "ok": false,
+      "err": "skipped (manual mode)"
+    }
+  }
+}

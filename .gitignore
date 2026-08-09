@@ -1,0 +1,45 @@
+# Python environments
+.venv/
+venv/
+env/
+site-packages/
+
+# Python/test caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.pyc
+*.pyo
+
+# Temporary/checkpoint lock files
+*.tmp
+*.temp
+*.lock
+*.checkpoint.tmp
+
+# Streamlit/IDE/OS local state
+.streamlit/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime outputs are not the regression source of truth.
+output/*
+!output/161005/
+output/161005/*
+!output/161005/calibration_checkpoint.csv
+!output/161005/calibration_meta.json
+!output/161005/error_matrix.csv
+!output/161005/best_params_phaseA_candidate.json
+!output/161005/performance_timeout_report.md
+
+# Fixed regression baselines must remain trackable.
+!tests/baseline/
+!tests/baseline/161005/
+!tests/baseline/161005/**
+
+# Local acceptance archives
+*.zip

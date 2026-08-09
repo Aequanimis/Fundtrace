@@ -1,0 +1,6 @@
+akshare
+matplotlib
+numpy
+pandas
+requests
+streamlit
