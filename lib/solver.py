@@ -48,9 +48,47 @@ def project_capped_simplex(v, B):
     return np.maximum(v - theta, 0.0)
 
 
+def project_box_simplex(v, B, cap=None, tol=1e-13, max_iter=100):
+    """精确投影到 ``0 <= beta <= cap, sum(beta) <= B``。
+
+    KKT 条件给出 ``beta_i = clip(v_i - theta, 0, cap_i)``。若和式约束
+    激活，用单调二分求唯一的 ``theta``；K 很小（当前约 31），该实现简单
+    且不引入生产依赖。
+    """
+    values = np.asarray(v, dtype=float)
+    budget = max(float(B), 0.0)
+    if cap is None:
+        caps = np.full_like(values, np.inf)
+    else:
+        caps = np.maximum(np.asarray(cap, dtype=float), 0.0)
+        if caps.shape != values.shape:
+            raise ValueError("cap 与 beta 维度不一致")
+
+    projected = np.minimum(np.maximum(values, 0.0), caps)
+    if projected.sum() <= budget + tol:
+        return projected
+    if budget <= 0:
+        return np.zeros_like(values)
+
+    lower = float(np.min(values - np.where(np.isfinite(caps), caps, budget)))
+    upper = float(np.max(values))
+    for _ in range(max_iter):
+        theta = (lower + upper) / 2.0
+        projected = np.minimum(np.maximum(values - theta, 0.0), caps)
+        total = float(projected.sum())
+        if abs(total - budget) <= tol:
+            break
+        if total > budget:
+            lower = theta
+        else:
+            upper = theta
+    projected = np.minimum(np.maximum(values - upper, 0.0), caps)
+    return projected
+
+
 # ---------------------------------------------------------------- 求解
 
-def solve_weighted_lasso(
+def solve_weighted_lasso_legacy(
     X, y, w=None, alpha=0.0, max_sum=1.0,
     max_iter=2000, tol=1e-9, verbose=False,
 ):
@@ -137,6 +175,90 @@ def solve_weighted_lasso(
         "r2": float(r2) if np.isfinite(r2) else np.nan,
         "n_iter": it,
         "converged": converged,
+        "resid_std": float(np.sqrt(ss_res)),
+        "sum_beta": float(beta.sum()),
+    }
+
+
+def solve_weighted_lasso(
+    X, y, w=None, alpha=0.0, max_sum=1.0, cap_vec=None,
+    max_iter=2000, tol=1e-10, verbose=False,
+):
+    """生产 FISTA：adaptive restart + projected KKT + 精确 box-simplex。"""
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float).ravel()
+    T, K = X.shape
+    if w is None:
+        w = np.ones(T)
+    w = np.asarray(w, dtype=float).ravel()
+    w = w / w.sum()
+
+    xbar = (w[:, None] * X).sum(axis=0)
+    ybar = float((w * y).sum())
+    Xc = X - xbar
+    yc = y - ybar
+    WX = w[:, None] * Xc
+    A = Xc.T @ WX
+    b = WX.T @ yc
+    try:
+        lmax = float(np.linalg.eigvalsh(A).max())
+    except np.linalg.LinAlgError:
+        lmax = float(np.trace(A))
+    lipschitz = 2.0 * max(lmax, 1e-12)
+    step = 1.0 / lipschitz
+
+    caps = None if cap_vec is None else np.maximum(np.asarray(cap_vec, dtype=float), 0.0)
+    beta = project_box_simplex(np.zeros(K), max_sum, caps)
+    z = beta.copy()
+    momentum = 1.0
+    converged = False
+    kkt_residual = np.inf
+
+    for iteration in range(1, max_iter + 1):
+        grad_z = 2.0 * (A @ z - b) + alpha
+        beta_new = project_box_simplex(z - step * grad_z, max_sum, caps)
+
+        grad_beta = 2.0 * (A @ beta_new - b) + alpha
+        kkt_point = project_box_simplex(beta_new - step * grad_beta, max_sum, caps)
+        kkt_residual = float(np.max(np.abs(beta_new - kkt_point)))
+        if kkt_residual <= tol:
+            beta = beta_new
+            converged = True
+            break
+
+        next_momentum = (1.0 + np.sqrt(1.0 + 4.0 * momentum * momentum)) / 2.0
+        candidate_z = beta_new + ((momentum - 1.0) / next_momentum) * (beta_new - beta)
+        # Gradient-scheme adaptive restart; avoids oscillation near active bounds.
+        if float(np.dot(z - beta_new, beta_new - beta)) > 0.0:
+            momentum = 1.0
+            z = beta_new.copy()
+        else:
+            momentum = next_momentum
+            z = candidate_z
+        beta = beta_new
+    else:
+        iteration = max_iter
+
+    beta = project_box_simplex(np.where(beta < 1e-12, 0.0, beta), max_sum, caps)
+    intercept = ybar - xbar @ beta
+    pred = X @ beta + intercept
+    resid = y - pred
+    ss_res = float((w * resid ** 2).sum())
+    ss_tot = float((w * (y - ybar) ** 2).sum())
+    r2 = 1.0 - ss_res / ss_tot if ss_tot > 1e-18 else np.nan
+
+    if verbose:
+        print(
+            f"  iter={iteration} converged={converged} KKT={kkt_residual:.2e} "
+            f"R²={r2:.4f} Σβ={beta.sum():.4f}"
+        )
+    return {
+        "beta": beta,
+        "intercept": float(intercept),
+        "r2": float(r2) if np.isfinite(r2) else np.nan,
+        "n_iter": iteration,
+        "converged": converged,
+        "kkt_residual": kkt_residual,
         "resid_std": float(np.sqrt(ss_res)),
         "sum_beta": float(beta.sum()),
     }

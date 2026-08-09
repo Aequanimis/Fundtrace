@@ -25,7 +25,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from .solver import solve_weighted_lasso, exp_decay_weights
+from .solver import exp_decay_weights, solve_weighted_lasso, solve_weighted_lasso_legacy
 from . import taxonomy as tx
 
 
@@ -326,17 +326,19 @@ def rolling_positions(
 
 
 def _solve_with_caps(X, y, w, alpha, equity_cap, cap_vec):
-    """带逐行业上界的求解。
+    """一次 FISTA 精确求解非负、总和与逐行业 box 约束。"""
+    return solve_weighted_lasso(
+        X, y, w=w, alpha=alpha, max_sum=equity_cap, cap_vec=cap_vec
+    )
 
-    求解器本身只支持 β≥0 与 Σβ≤B。逐行业上界通过变量缩放实现：
-    令 β = cap ⊙ γ，则 β_i ≤ cap_i 等价于 γ_i ≤ 1，
-    再用一次投影把 γ 截断到 [0,1]，交替几轮即可（cap 通常不紧，收敛很快）。
-    """
+
+def _solve_with_caps_legacy(X, y, w, alpha, equity_cap, cap_vec):
+    """V3 reference：保留原“固定超界行业后重解”的启发式路径。"""
     if cap_vec is None:
-        return solve_weighted_lasso(X, y, w=w, alpha=alpha, max_sum=equity_cap)
+        return solve_weighted_lasso_legacy(X, y, w=w, alpha=alpha, max_sum=equity_cap)
 
     cap_vec = np.maximum(cap_vec, 1e-4)
-    res = solve_weighted_lasso(X, y, w=w, alpha=alpha, max_sum=equity_cap)
+    res = solve_weighted_lasso_legacy(X, y, w=w, alpha=alpha, max_sum=equity_cap)
 
     for _ in range(6):
         over = res["beta"] > cap_vec + 1e-9
@@ -348,7 +350,7 @@ def _solve_with_caps(X, y, w, alpha, equity_cap, cap_vec):
         Xr = X.copy()
         Xr[:, over] = 0.0
         rem_cap = max(equity_cap - fixed.sum(), 0.0)
-        r2 = solve_weighted_lasso(Xr, y_adj, w=w, alpha=alpha, max_sum=rem_cap)
+        r2 = solve_weighted_lasso_legacy(Xr, y_adj, w=w, alpha=alpha, max_sum=rem_cap)
         beta = r2["beta"].copy()
         beta[over] = cap_vec[over]
         res = {**r2, "beta": beta, "sum_beta": float(beta.sum())}
