@@ -21,6 +21,7 @@ __pycache__/
 
 # Streamlit/IDE/OS local state
 .streamlit/
+frontend/node_modules/
 .vscode/
 .idea/
 .DS_Store
