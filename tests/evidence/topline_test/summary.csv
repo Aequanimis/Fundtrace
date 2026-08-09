@@ -1,0 +1,7 @@
+﻿fund_code,period_end,topline,http_success,http_status,status,error,rows,unique_stock_codes,duplicate_stock_codes,holdings_sum,min_holding_pct,max_holding_pct,returned_report_periods,period_mixed,first_100_equal_top100,has_rows_after_100,rows_after_100_weight_sum
+161005,2024-06-30,100,True,200,OK,,100,100,False,0.9164000000000001,0.001,0.056100000000000004,2024年2季度股票投资明细,False,,False,0.0
+161005,2024-06-30,200,True,200,OK,,10,10,False,0.31420000000000003,0.0225,0.056100000000000004,2024年2季度股票投资明细,False,,False,0.0
+161005,2024-06-30,500,True,200,OK,,10,10,False,0.31420000000000003,0.0225,0.056100000000000004,2024年2季度股票投资明细,False,,False,0.0
+161005,2025-12-31,100,True,200,OK,,100,100,False,0.8764999999999998,0.0012,0.0625,2025年4季度股票投资明细,False,,False,0.0
+161005,2025-12-31,200,True,200,OK,,10,10,False,0.36860000000000004,0.020499999999999997,0.0625,2025年4季度股票投资明细,False,,False,0.0
+161005,2025-12-31,500,True,200,OK,,10,10,False,0.36860000000000004,0.020499999999999997,0.0625,2025年4季度股票投资明细,False,,False,0.0

@@ -1,0 +1,58 @@
+{
+  "fund_code": "161005",
+  "n_periods": 18,
+  "topline_test_status": "TOPLINE_RESPONSE_UNRELIABLE",
+  "topline_test": {
+    "2024-06-30": {
+      "100": {
+        "status": "OK",
+        "rows": 100,
+        "http_success": true,
+        "has_rows_after_100": false
+      },
+      "200": {
+        "status": "OK",
+        "rows": 10,
+        "http_success": true,
+        "has_rows_after_100": false
+      },
+      "500": {
+        "status": "OK",
+        "rows": 10,
+        "http_success": true,
+        "has_rows_after_100": false
+      }
+    },
+    "2025-12-31": {
+      "100": {
+        "status": "OK",
+        "rows": 100,
+        "http_success": true,
+        "has_rows_after_100": false
+      },
+      "200": {
+        "status": "OK",
+        "rows": 10,
+        "http_success": true,
+        "has_rows_after_100": false
+      },
+      "500": {
+        "status": "OK",
+        "rows": 10,
+        "http_success": true,
+        "has_rows_after_100": false
+      }
+    }
+  },
+  "coverage_counts": {
+    "TOP10": 1,
+    "PARTIAL": 9,
+    "TOP_N_TRUNCATED": 8,
+    "FULL_CONFIRMED": 0,
+    "UNKNOWN": 0
+  },
+  "median_coverage_ratio": 0.7153402335193453,
+  "min_coverage_ratio": 0.4703699777377293,
+  "max_coverage_ratio": 0.9839310418218582,
+  "source_unverified_count": 9
+}

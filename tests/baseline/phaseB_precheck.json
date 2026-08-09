@@ -1,0 +1,15 @@
+{
+  "commit": "ca4d14aa4362130d0708a2cda948f21f9d27b87b",
+  "fund_code": "161005",
+  "files": {
+    "weekly_positions.csv": "ecc1a1cfa1d851347d27fb63560cdfbd625001cdb23c646af4e572229584169f",
+    "diagnostics.csv": "b8a2fd1c19cccaee13d5ac90bce3fe98f9b93d3567b5b0d44ccc9a097baf2fea",
+    "report.md": "406fc03106e0a67782dfc0e16bca7dd25d8d82efd51a248bc95d45ea6c590503"
+  },
+  "quick_analysis": {
+    "diagnostics_rows": 1044,
+    "median_r2": 0.9191352677943865,
+    "median_sum_beta": 0.8842642008095436,
+    "unconverged_rows": 0
+  }
+}
