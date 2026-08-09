@@ -62,6 +62,7 @@ def _identity(code, factor_source, nav, hold):
     base_files = sorted(path for path in (ROOT / "base").iterdir() if path.is_file())
     code_files = [
         ROOT / "lib" / "regress.py",
+        ROOT / "lib" / "solver.py",
         ROOT / "lib" / "calibrate.py",
         ROOT / "lib" / "calibrate_phase_a.py",
         ROOT / "calibration_worker.py",
