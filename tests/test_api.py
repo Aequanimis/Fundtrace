@@ -31,6 +31,14 @@ def test_valid_job_creation_and_status(monkeypatch):
     assert status.json()["fund_code"] == "161005"
 
 
+def test_completed_job_elapsed_time_is_frozen(monkeypatch):
+    job = server.JobRecord(
+        "job", "161005", False, status="complete", created_at=100.0, updated_at=116.3
+    )
+    monkeypatch.setattr(server.time, "monotonic", lambda: 999.0)
+    assert job.public()["elapsed_seconds"] == 16.3
+
+
 def test_results_success_and_missing(monkeypatch):
     client = TestClient(server.app)
     monkeypatch.setattr(server, "build_presentation", lambda *args: {"fund_code": "161005"})

@@ -50,9 +50,9 @@ class JobRecord:
     can_use_local_data: bool = False
 
     def public(self) -> dict:
-        now = time.monotonic()
+        end = self.updated_at if self.status in {"complete", "error"} else time.monotonic()
         payload = asdict(self)
-        payload["elapsed_seconds"] = round(max(0.0, now - self.created_at), 1)
+        payload["elapsed_seconds"] = round(max(0.0, end - self.created_at), 1)
         payload.pop("created_at")
         payload.pop("updated_at")
         payload.pop("update_data")

@@ -8,7 +8,9 @@ FundTrace 基于基金公开披露、复权净值和申万行业收益数据，�
 
 ## 快速使用
 
-Windows 用户双击 `启动基金高频分析.bat`，输入 6 位基金代码后选择“快速追踪”。第一次启动会自动创建本地 `.venv` 并安装依赖。
+Windows 用户双击 `启动FundTrace.bat`，浏览器会自动打开全新的本地 FundTrace 界面。第一次启动会自动创建本地 `.venv` 并安装 Python 依赖；发布包已包含 `frontend/dist`，最终用户不需要安装 Node.js。
+
+旧版 Streamlit 界面仍可通过 `启动基金高频分析.bat` 使用。
 
 命令行快速分析：
 
@@ -30,7 +32,7 @@ python run_analysis.py 161005 --calibrate
 
 - 从公开持仓披露、基金复权净值和申万行业收益数据估算周频隐含行业暴露。
 - 展示披露空窗期可能的行业调仓方向、拟合质量和约束诊断。
-- 保留本地 Streamlit 界面与命令行两种使用方式。
+- 提供 React + FastAPI 本地界面，并保留 Streamlit 与命令行使用方式。
 
 ## 输出说明
 
@@ -55,6 +57,9 @@ FundTrace 给出的是**隐含收益暴露**，不是实时真实持仓。披露
 ## 目录
 
 - `lib/`：模型与回归实现
+- `api/`：仅绑定 `127.0.0.1` 的本地 API 桥接
+- `frontend/src/`：React 界面源码
+- `frontend/dist/`：无需 Node.js 即可运行的生产构建
 - `base/`：申万行业底座数据
 - `funds/<代码>/`：基金输入数据
 - `output/<代码>/`：运行输出
