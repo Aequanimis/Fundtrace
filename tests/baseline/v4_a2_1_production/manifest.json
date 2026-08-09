@@ -1,0 +1,42 @@
+{
+  "model": "v4-a2.1-stable",
+  "production_reference_commit": "ca4d14aa4362130d0708a2cda948f21f9d27b87b",
+  "production_reference_path": "FundTrace_V4_A2.1_验收包.zip::Fundtrace/output/161005/",
+  "source_zip": {
+    "path": "C:\\Users\\lvdon\\Desktop\\Fullgoal\\AI培训\\AI 课题\\FundTrace_V4_A2.1_验收包.zip",
+    "size_bytes": 2924083,
+    "sha256": "f9ae51d59a87f71f4e26d1a106e2a32927a0dd6488198337237266995596f1b4"
+  },
+  "acceptance_evidence": {
+    "path": "docs/development/A2_1_BENCHMARK.md",
+    "fast_analysis_seconds": 13.791,
+    "a2_to_a2_1_max_abs_diff": 1.0967271993345129e-8,
+    "top5_vs_v3": "1044/1044"
+  },
+  "files": {
+    "weekly_positions.csv": {
+      "size_bytes": 281687,
+      "sha256": "ecc1a1cfa1d851347d27fb63560cdfbd625001cdb23c646af4e572229584169f",
+      "rows": 1044,
+      "columns": 28,
+      "industry_column_count": 27,
+      "date_min": "2006-02-24",
+      "date_max": "2026-08-07",
+      "industry_columns": ["交通运输", "传媒", "公用事业", "农林牧渔", "医药生物", "商贸零售", "国防军工", "基础化工", "家用电器", "建筑材料", "建筑装饰", "房地产", "有色金属", "机械设备", "汽车", "电力设备", "电子", "社会服务", "纺织服饰", "综合", "计算机", "轻工制造", "通信", "钢铁", "银行", "非银金融", "食品饮料"]
+    },
+    "diagnostics.csv": {
+      "size_bytes": 62098,
+      "sha256": "b8a2fd1c19cccaee13d5ac90bce3fe98f9b93d3567b5b0d44ccc9a097baf2fea",
+      "rows": 1044,
+      "columns": 6
+    },
+    "sim_portfolio.csv": {
+      "size_bytes": 5201,
+      "sha256": "70e21c4f679a4769171ed1323d9bbb2ba56296d63a37edbbb6802e4000801d7b"
+    },
+    "report.md": {
+      "size_bytes": 5059,
+      "sha256": "406fc03106e0a67782dfc0e16bca7dd25d8d82efd51a248bc95d45ea6c590503"
+    }
+  }
+}

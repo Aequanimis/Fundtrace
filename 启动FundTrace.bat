@@ -22,10 +22,10 @@ if not exist "%PYTHON_EXE%" (
   if errorlevel 1 goto :failed
 )
 
-"%PYTHON_EXE%" -c "import fastapi, uvicorn, pandas, numpy" >nul 2>nul
+"%PYTHON_EXE%" "tools\check_locked_environment.py" >nul 2>nul
 if errorlevel 1 (
-  echo [FundTrace] 正在安装首次运行所需组件...
-  "%PYTHON_EXE%" -m pip install -r "requirements.txt"
+  echo [FundTrace] 正在安装或修复锁定的生产依赖...
+  "%PYTHON_EXE%" -m pip install -r "requirements-lock.txt"
   if errorlevel 1 goto :failed
 )
 

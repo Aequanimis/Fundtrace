@@ -1,0 +1,230 @@
+{
+  "manifest_version": 1,
+  "generated_at_utc": "2026-08-09T18:29:03.570358+00:00",
+  "fund_code": "161005",
+  "git": {
+    "commit": "a6eb708223e8dea7984b46d454defd828a98515e",
+    "branch": "fix/mvp-ui-v1.1-release"
+  },
+  "environment": {
+    "python_version": "3.12.13",
+    "python_executable": "C:\\Users\\lvdon\\AppData\\Local\\Temp\\fundtrace-repro-audit-pandas233\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.22631-SP0",
+    "packages": {
+      "numpy": "2.3.5",
+      "pandas": "2.3.3",
+      "scipy": null,
+      "sklearn": null,
+      "matplotlib": null,
+      "akshare": null,
+      "requests": null,
+      "fastapi": null,
+      "uvicorn": null
+    }
+  },
+  "parameters": {
+    "window": 120,
+    "half_life": 40,
+    "alpha": 1e-06,
+    "anchor_mult": null,
+    "equity_cap": "auto",
+    "factor_mode": "index_proxy",
+    "calibrate": false
+  },
+  "source_files": [
+    {
+      "path": "run_analysis.py",
+      "exists": true,
+      "size_bytes": 24118,
+      "sha256": "d5affe11555fe745d506b1fcfb46104a5caa8c2a2a6f3e1e80340a61778e8f83"
+    },
+    {
+      "path": "lib/solver.py",
+      "exists": true,
+      "size_bytes": 13005,
+      "sha256": "dc59164e8d5b5c54c17fcb2393777cde9de6e77225f59b14004a05c183458659"
+    },
+    {
+      "path": "lib/regress.py",
+      "exists": true,
+      "size_bytes": 19332,
+      "sha256": "9dfc858484dd5b0a929b8bb2da5ae8e6872b49d70fc40aae0e482f528e14ed5b"
+    },
+    {
+      "path": "lib/calibrate.py",
+      "exists": true,
+      "size_bytes": 14002,
+      "sha256": "bc8f450e5766a8df76c9cbad679bf86a74489cfd8eab140d69a0b49930b1b78b"
+    },
+    {
+      "path": "lib/simulate.py",
+      "exists": true,
+      "size_bytes": 19680,
+      "sha256": "c94bc1b5acce94582864d0afc12f3a1879e1674aed5ad8be00b92d1a93ffdb2f"
+    },
+    {
+      "path": "lib/taxonomy.py",
+      "exists": true,
+      "size_bytes": 6617,
+      "sha256": "ea85f4507cb2fb74b355018f3d8203a693795b8e7d067e2ded4429eb65493ab2"
+    }
+  ],
+  "input_trace": [
+    {
+      "path": "base/sw_industry_index.csv",
+      "exists": true,
+      "size_bytes": 5387905,
+      "sha256": "0c107c6c4c6e9f00f1ea4eea0663ce8ab347dddaf81e66bcaddc59206f19a683",
+      "rows": 141161,
+      "columns": 4,
+      "column_names": [
+        "date",
+        "close",
+        "industry_code",
+        "industry_name"
+      ],
+      "loader": "run_analysis.load_base",
+      "required": true,
+      "used_by_default_analysis": true
+    },
+    {
+      "path": "base/stock_industry_map.csv",
+      "exists": true,
+      "size_bytes": 442318,
+      "sha256": "d27843f6e8bb2c5e81e5ccbe31a4bac84c50732b97fc10b313db0ba1571684c7",
+      "rows": 5876,
+      "columns": 5,
+      "column_names": [
+        "股票代码",
+        "industry_name",
+        "sw_class_code",
+        "start_date",
+        "source"
+      ],
+      "loader": "run_analysis.load_base",
+      "required": true,
+      "used_by_default_analysis": true
+    },
+    {
+      "path": "funds/161005/nav.csv",
+      "exists": true,
+      "size_bytes": 222895,
+      "sha256": "0b4c65df17ae6e16db4877334c47f600ab2b6ae3ef38d076f7ee2ffdd43ee158",
+      "rows": 5057,
+      "columns": 4,
+      "column_names": [
+        "date",
+        "nav_unit",
+        "nav_cum",
+        "nav_adj"
+      ],
+      "loader": "run_analysis.load_fund",
+      "required": true,
+      "used_by_default_analysis": true
+    },
+    {
+      "path": "funds/161005/holdings.csv",
+      "exists": true,
+      "size_bytes": 95116,
+      "sha256": "128de01367297cff43e5eb45e31bad62eb372301b94c4ac7bf7dde25199c8deb",
+      "rows": 1159,
+      "columns": 8,
+      "column_names": [
+        "序号",
+        "股票代码",
+        "股票名称",
+        "占净值比例",
+        "持股数",
+        "持仓市值",
+        "季度",
+        "fetch_year"
+      ],
+      "loader": "run_analysis.load_fund",
+      "required": true,
+      "used_by_default_analysis": true
+    },
+    {
+      "path": "funds/161005/industry_alloc.csv",
+      "exists": true,
+      "size_bytes": 16117,
+      "sha256": "631d44b02a774f7fd1cd564b891056bf2e09756817f34a5e5e5a4bdab218204e",
+      "rows": 265,
+      "columns": 6,
+      "column_names": [
+        "序号",
+        "行业类别",
+        "占净值比例",
+        "市值",
+        "截止时间",
+        "fetch_year"
+      ],
+      "loader": "run_analysis.load_fund",
+      "required": false,
+      "used_by_default_analysis": true
+    }
+  ],
+  "conditional_inputs_not_used": [
+    {
+      "path": "base/stock_klines.csv",
+      "condition": "only with --stock-level",
+      "used_by_default_analysis": false
+    }
+  ],
+  "output_schema": {
+    "weekly_positions": {
+      "path": "output/161005/weekly_positions.csv",
+      "sha256": "9090c9452f2d413020dc3d23abb01c612f587d1b2ae6edb6754c5497fc7e4b6e",
+      "rows": 1044,
+      "columns": 29,
+      "industry_column_count": 28,
+      "industry_columns": [
+        "交通运输",
+        "传媒",
+        "公用事业",
+        "农林牧渔",
+        "医药生物",
+        "商贸零售",
+        "国防军工",
+        "基础化工",
+        "家用电器",
+        "建筑材料",
+        "建筑装饰",
+        "房地产",
+        "有色金属",
+        "机械设备",
+        "汽车",
+        "煤炭",
+        "电力设备",
+        "电子",
+        "社会服务",
+        "纺织服饰",
+        "综合",
+        "计算机",
+        "轻工制造",
+        "通信",
+        "钢铁",
+        "银行",
+        "非银金融",
+        "食品饮料"
+      ],
+      "date_min": "2006-02-24",
+      "date_max": "2026-08-07"
+    },
+    "diagnostics": {
+      "path": "output/161005/diagnostics.csv",
+      "sha256": "d4b75334828d385cbfb2b3ed5a21d2508f2c25107e7566e7eb50fffed87b11fc",
+      "rows": 1044,
+      "columns": 6,
+      "industry_column_count": 5,
+      "industry_columns": [
+        "r2",
+        "sum_beta",
+        "converged",
+        "n_obs",
+        "n_active"
+      ],
+      "date_min": "2006-02-24",
+      "date_max": "2026-08-07"
+    }
+  }
+}

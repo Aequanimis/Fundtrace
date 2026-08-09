@@ -1,0 +1,10 @@
+# FundTrace production dependencies verified against v4-a2.1-stable.
+akshare==1.18.83
+fastapi==0.141.1
+matplotlib==3.11.1
+numpy==2.5.1
+pandas==3.0.5
+pydantic==2.13.4
+requests==2.34.2
+streamlit==1.61.1
+uvicorn==0.52.1

@@ -1,0 +1,47 @@
+{
+  "source": {
+    "kind": "FundTrace MVP UI V1 packaged output",
+    "zip_path": "C:\\Users\\lvdon\\Desktop\\Fullgoal\\AI培训\\AI 课题\\FundTrace_MVP_UI_V1_验收包.zip",
+    "zip_sha256": "f33674b2bf8a3b798ec85540c6b1a91537ba6b6d1a46f8a83aaa8f21a51be8d5",
+    "zip_size_bytes": 2930663
+  },
+  "files": {
+    "diagnostics.csv": {
+      "sha256": "b8a2fd1c19cccaee13d5ac90bce3fe98f9b93d3567b5b0d44ccc9a097baf2fea",
+      "size_bytes": 62098,
+      "line_count": 1045,
+      "rows": 1044,
+      "columns": 6,
+      "column_names": ["date", "r2", "sum_beta", "converged", "n_obs", "n_active"],
+      "date_min": "2006-02-24",
+      "date_max": "2026-08-07"
+    },
+    "report.md": {
+      "sha256": "d70a40958d12fc1da72928fe7015c0e14af1c93e0bd9e2e6da0a97f9cbbee033",
+      "size_bytes": 5059,
+      "line_count": 110
+    },
+    "sim_portfolio.csv": {
+      "sha256": "70e21c4f679a4769171ed1323d9bbb2ba56296d63a37edbbb6802e4000801d7b",
+      "size_bytes": 5201,
+      "line_count": 19,
+      "rows": 18,
+      "columns": 32,
+      "column_names": ["period", "交通运输", "传媒", "公用事业", "农林牧渔", "医药生物", "商贸零售", "国防军工", "基础化工", "家用电器", "建筑材料", "建筑装饰", "房地产", "有色金属", "机械设备", "汽车", "煤炭", "环保", "电力设备", "电子", "石油石化", "社会服务", "纺织服饰", "综合", "美容护理", "计算机", "轻工制造", "通信", "钢铁", "银行", "非银金融", "食品饮料"],
+      "date_min": "2022-03-31",
+      "date_max": "2026-06-30"
+    },
+    "weekly_positions.csv": {
+      "sha256": "ecc1a1cfa1d851347d27fb63560cdfbd625001cdb23c646af4e572229584169f",
+      "size_bytes": 281687,
+      "line_count": 1045,
+      "rows": 1044,
+      "columns": 28,
+      "column_names": ["date", "交通运输", "传媒", "公用事业", "农林牧渔", "医药生物", "商贸零售", "国防军工", "基础化工", "家用电器", "建筑材料", "建筑装饰", "房地产", "有色金属", "机械设备", "汽车", "电力设备", "电子", "社会服务", "纺织服饰", "综合", "计算机", "轻工制造", "通信", "钢铁", "银行", "非银金融", "食品饮料"],
+      "date_min": "2006-02-24",
+      "date_max": "2026-08-07",
+      "industry_columns": ["交通运输", "传媒", "公用事业", "农林牧渔", "医药生物", "商贸零售", "国防军工", "基础化工", "家用电器", "建筑材料", "建筑装饰", "房地产", "有色金属", "机械设备", "汽车", "电力设备", "电子", "社会服务", "纺织服饰", "综合", "计算机", "轻工制造", "通信", "钢铁", "银行", "非银金融", "食品饮料"],
+      "industry_column_count": 27
+    }
+  }
+}
