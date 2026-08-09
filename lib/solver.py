@@ -48,22 +48,8 @@ def project_capped_simplex(v, B):
     return np.maximum(v - theta, 0.0)
 
 
-def project_box_simplex(v, B, cap=None, tol=1e-13, max_iter=100):
-    """精确投影到 ``0 <= beta <= cap, sum(beta) <= B``。
-
-    KKT 条件给出 ``beta_i = clip(v_i - theta, 0, cap_i)``。若和式约束
-    激活，用单调二分求唯一的 ``theta``；K 很小（当前约 31），该实现简单
-    且不引入生产依赖。
-    """
-    values = np.asarray(v, dtype=float)
-    budget = max(float(B), 0.0)
-    if cap is None:
-        caps = np.full_like(values, np.inf)
-    else:
-        caps = np.maximum(np.asarray(cap, dtype=float), 0.0)
-        if caps.shape != values.shape:
-            raise ValueError("cap 与 beta 维度不一致")
-
+def _project_box_simplex_generic(values, budget, caps, tol=1e-13, max_iter=100):
+    """通用 box-simplex 二分投影，供有逐行业上界的路径使用。"""
     projected = np.minimum(np.maximum(values, 0.0), caps)
     if projected.sum() <= budget + tol:
         return projected
@@ -84,6 +70,35 @@ def project_box_simplex(v, B, cap=None, tol=1e-13, max_iter=100):
             upper = theta
     projected = np.minimum(np.maximum(values - upper, 0.0), caps)
     return projected
+
+
+def project_box_simplex_generic(v, B, cap=None, tol=1e-15, max_iter=100):
+    """A2 通用投影的保留实现，仅用于数值回归测试。"""
+    values = np.asarray(v, dtype=float)
+    budget = max(float(B), 0.0)
+    if cap is None:
+        caps = np.full_like(values, np.inf)
+    else:
+        caps = np.maximum(np.asarray(cap, dtype=float), 0.0)
+        if caps.shape != values.shape:
+            raise ValueError("cap 与 beta 维度不一致")
+    return _project_box_simplex_generic(values, budget, caps, tol, max_iter)
+
+
+def project_box_simplex(v, B, cap=None, tol=1e-13, max_iter=100):
+    """精确投影到 ``0 <= beta <= cap, sum(beta) <= B``。
+
+    无逐行业上界时，问题退化为普通 capped simplex，直接走原有排序投影；
+    有逐行业上界时才使用通用 box-simplex 二分投影。
+    """
+    values = np.asarray(v, dtype=float)
+    budget = max(float(B), 0.0)
+    if cap is None:
+        return project_capped_simplex(values, budget)
+    caps = np.maximum(np.asarray(cap, dtype=float), 0.0)
+    if caps.shape != values.shape:
+        raise ValueError("cap 与 beta 维度不一致")
+    return _project_box_simplex_generic(values, budget, caps, tol, max_iter)
 
 
 # ---------------------------------------------------------------- 求解
