@@ -1,0 +1,20 @@
+{
+  "model_version": "FundTrace-V4-PhaseA",
+  "status": "PHASE_A_CANDIDATE_ONLY",
+  "fund_code": "161005",
+  "window": 60,
+  "half_life": 0,
+  "alpha": 1e-07,
+  "anchor_mult": 2.5,
+  "cv_mae": 0.021747126185340335,
+  "n_folds": 3,
+  "n_periods": 17,
+  "top5_combo_ids": [
+    "w60_h0_a1e-07_anchor2.5",
+    "w60_h0_a0_anchor2.5",
+    "w60_h0_a1e-06_anchor2.5",
+    "w60_h0_a1e-05_anchor2.5",
+    "w90_h40_a1e-07_anchor2.5"
+  ],
+  "production_eligible": false
+}
