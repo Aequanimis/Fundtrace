@@ -1,0 +1,48 @@
+{
+  "identity": {
+    "factor_source": "index_proxy",
+    "nav_latest_date": "2026-08-07",
+    "holdings_latest_date": "2026-06-30",
+    "nav_hash": "edf0d6305c5426f3a4b4d2c1e94d174b1aedcdf5d41b7c4ece7e087558903bc7",
+    "holdings_hash": "98e0f4bb4d1fb2d487b40fce5693211f0a4c3c3ee1f61c0e7d19cdd07d4b2c4c",
+    "base_hash": "480a07947e61a1bf901ab4e0b8c4ae50f895aaba85d95913ab6506ddd49eb61a",
+    "code_version_identifier": "c8853eedce53eca8f62504a92882df4e8a1d997b247196e5e4b7acb437df9493",
+    "fund_code": "161005",
+    "model_version": "FundTrace-V4-PhaseA",
+    "parameter_grid": {
+      "windows": [
+        60,
+        90,
+        120,
+        180,
+        250
+      ],
+      "half_lives": [
+        0,
+        20,
+        40,
+        80
+      ],
+      "alphas": [
+        0.0,
+        1e-07,
+        1e-06,
+        1e-05
+      ],
+      "anchor_mults": [
+        null,
+        2.5
+      ]
+    },
+    "target_dates_count": 49,
+    "target_dates_hash": "e77e57b29b4a1c35c0151e873d67b988c073cc4ad7d51faab3ba005aa150fb00",
+    "max_calibration_seconds": 300.0
+  },
+  "identity_hash": "68984fc41c87d120936b23fd71b344ffcd5e4f66af844dc783ea6b2229907258",
+  "status": "TIMEOUT_SAFE_STOP",
+  "resumed": false,
+  "completed_combos": 84,
+  "total_combos": 160,
+  "elapsed_seconds": 288.93800000008196,
+  "last_combo": "w120_h40_a1e-07_anchor2.5"
+}

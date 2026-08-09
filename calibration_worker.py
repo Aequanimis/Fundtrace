@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -26,6 +27,20 @@ from lib.calibrate_phase_a import (  # noqa: E402
 from lib.regress import build_stock_factors, index_to_returns, nav_to_returns  # noqa: E402
 from lib.simulate import SimulatedPortfolio  # noqa: E402
 from run_analysis import extract_real_holdings, load_base, load_fund  # noqa: E402
+
+
+def _holdings_latest_date(hold):
+    dates = []
+    for column in hold.columns:
+        if "季度" not in str(column) and "报告" not in str(column) and str(column).lower() != "period":
+            continue
+        values = hold[column].dropna().astype(str)
+        dates.extend(pd.to_datetime(values, errors="coerce").dropna().tolist())
+        for value in values:
+            match = re.search(r"(20\d{2})年([1-4])季度", value)
+            if match:
+                dates.append(pd.Period(f"{match.group(1)}Q{match.group(2)}", freq="Q").end_time.normalize())
+    return str(max(dates).date()) if dates else "unknown"
 
 
 def _test_hang_if_requested(output_dir: Path):
@@ -53,15 +68,10 @@ def _identity(code, factor_source, nav, hold):
         ROOT / "run_analysis.py",
     ]
     nav_latest = str(pd.to_datetime(nav["date"], errors="coerce").max().date())
-    holding_dates = []
-    for column in hold.columns:
-        if "季度" in str(column) or "报告" in str(column) or str(column).lower() == "period":
-            holding_dates.extend(pd.to_datetime(hold[column], errors="coerce").dropna().tolist())
-    holdings_latest = str(max(holding_dates).date()) if holding_dates else "unknown"
     return {
         "factor_source": factor_source,
         "nav_latest_date": nav_latest,
-        "holdings_latest_date": holdings_latest,
+        "holdings_latest_date": _holdings_latest_date(hold),
         "nav_hash": files_sha256([fund_dir / "nav.csv"]),
         "holdings_hash": files_sha256([fund_dir / "holdings.csv"]),
         "base_hash": files_sha256(base_files),
