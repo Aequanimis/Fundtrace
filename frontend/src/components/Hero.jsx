@@ -4,9 +4,9 @@ import { FundSearch } from "./FundSearch";
 import { Navbar } from "./Navbar";
 
 const metadata = [
-  [Activity, "周频行业暴露"],
-  [ShieldCheck, "本地分析"],
-  [Clock, "约15秒快速分析"],
+  [Activity, "周频行业暴露", null],
+  [ShieldCheck, "本地分析", null],
+  [Clock, "约15秒快速分析", "使用本地已有数据，不含必要的数据联网更新时间"],
 ];
 
 export function Hero({ uiState, jobStatus, elapsed, message, error, currentFundCode, onAnalyze }) {
@@ -18,8 +18,8 @@ export function Hero({ uiState, jobStatus, elapsed, message, error, currentFundC
         <div className="hero-content max-w-[1100px]">
           <div className="hero-copy">
             <div className="animate-blur-fade-up mb-6 flex flex-wrap gap-x-6 gap-y-3 text-xs text-zinc-400" style={{ animationDelay: "200ms" }}>
-              {metadata.map(([Icon, label]) => (
-                <span key={label} className="flex items-center gap-2"><Icon size={14} /> {label}</span>
+              {metadata.map(([Icon, label, title]) => (
+                <span key={label} className="flex items-center gap-2" title={title || undefined}><Icon size={14} /> {label}</span>
               ))}
             </div>
             <p className="animate-blur-fade-up mb-3 text-xs uppercase tracking-[0.26em] text-zinc-500" style={{ animationDelay: "300ms" }}>

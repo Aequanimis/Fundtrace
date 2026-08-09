@@ -13,6 +13,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "output"
 FUND_CODE_RE = re.compile(r"^\d{6}$")
+CREDIBILITY_RE = re.compile(
+    r"\*\*可信度评级：\s*([A-D])\s*[-—·]\s*([^*\r\n]+?)\s*\*\*"
+)
 
 
 def _indexed_csv(path: Path) -> pd.DataFrame:
@@ -60,6 +63,18 @@ def _summary_sentence(increase: dict, decrease: dict) -> str:
     if decrease["delta"] < 0:
         return f"近期{decrease['industry']}隐含暴露有所回落，未见明显增加行业。"
     return "最近四周隐含行业暴露整体变化较小。"
+
+
+def parse_credibility(report_markdown: str) -> dict | None:
+    """Read the model's existing A/B/C/D grade; never infer a new one."""
+    match = CREDIBILITY_RE.search(report_markdown)
+    if not match:
+        return None
+    return {
+        "grade": match.group(1),
+        "label": match.group(2).strip(),
+        "source": "existing_model_report",
+    }
 
 
 def build_presentation(
@@ -137,6 +152,7 @@ def build_presentation(
             comparison = sorted(rows, key=lambda item: abs(item["delta"]), reverse=True)[:10]
 
     report_markdown = required["report"].read_text(encoding="utf-8")
+    credibility = parse_credibility(report_markdown)
     analysis_seconds = _finite(analysis_time)
     payload = {
         "fund_code": code,
@@ -159,6 +175,7 @@ def build_presentation(
         },
         "trend": trend,
         "disclosure_comparison": comparison,
+        "credibility": credibility,
         "diagnostics": {
             "r2": r2,
             "median_r2": _finite(pd.to_numeric(diagnostics.get("r2"), errors="coerce").median()),

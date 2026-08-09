@@ -2,7 +2,7 @@
 
 FundTrace currently has two tracks:
 
-- **MVP:** `v4-a2.1-stable` — ready for frontend development and multi-fund testing.
+- **MVP UI V1.1:** release stabilization complete on `v4-a2.1-stable`, with React/FastAPI UI, locked production dependencies, and an exact production regression baseline.
 - **Research:** disclosure and equity-cap work — experimental, not the production default.
 
-Current next step: frontend design.
+Current next step: multi-fund MVP testing.

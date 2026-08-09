@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from api.presentation import build_presentation
+from api.presentation import build_presentation, parse_credibility
 
 
 def write_outputs(root, code="161005"):
@@ -57,3 +57,26 @@ def test_presentation_contains_no_nan(tmp_path):
     write_outputs(tmp_path)
     payload = build_presentation("161005", tmp_path)
     json.dumps(payload, allow_nan=False, ensure_ascii=False)
+
+
+@pytest.mark.parametrize(
+    ("grade", "label"),
+    [
+        ("A", "可信"),
+        ("B", "基本可信，局部谨慎"),
+        ("C", "谨慎使用，多交叉验证"),
+        ("D", "严重受限，仅作参考"),
+    ],
+)
+def test_credibility_parser_reads_existing_model_grade(grade, label):
+    report = f"## 0. 先看这里\n\n**可信度评级：{grade} - {label}**\n"
+    assert parse_credibility(report) == {
+        "grade": grade,
+        "label": label,
+        "source": "existing_model_report",
+    }
+
+
+def test_credibility_is_not_inferred_when_report_has_no_grade(tmp_path):
+    write_outputs(tmp_path)
+    assert build_presentation("161005", tmp_path)["credibility"] is None

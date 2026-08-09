@@ -41,7 +41,7 @@ export function FundSearch({ onAnalyze, disabled = false, initialCode = "" }) {
         </button>
       </div>
       <div className="mt-3 flex flex-col gap-2 px-1 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-        <span>{validation || "数据将优先读取本地缓存，必要时更新公开数据"}</span>
+        <span>{validation || "使用本地数据通常更快；更新数据耗时取决于网络和数据源响应"}</span>
         <label className="flex cursor-pointer items-center gap-2">
           <input
             type="checkbox"

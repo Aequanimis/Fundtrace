@@ -1,10 +1,11 @@
 import {
   ArrowDownRight,
   ArrowUpRight,
-  Check,
+  CheckCircle2,
   ChevronDown,
   Download,
   RefreshCcw,
+  TriangleAlert,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -48,6 +49,52 @@ function ChangeList({ title, items, direction }) {
         )) : <p className="py-4 text-sm text-zinc-600">最近四周没有明显变化</p>}
       </div>
     </article>
+  );
+}
+
+export function ModelStatus({ credibility, diagnostics, analysisTime }) {
+  const ConvergenceIcon = diagnostics.converged ? CheckCircle2 : TriangleAlert;
+  const convergenceTone = diagnostics.converged ? "text-emerald-300/80" : "text-amber-300/80";
+  return (
+    <div className="result-card mt-8 p-6">
+      {credibility && (
+        <div
+          className="mb-6 inline-flex rounded-full bg-white/[0.06] px-3 py-1.5 text-sm text-zinc-200"
+          aria-label={`可信度 ${credibility.grade} ${credibility.label}`}
+        >
+          {credibility.grade} · {credibility.label}
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <p className="flex items-center gap-2 text-sm text-zinc-300">
+          <CheckCircle2 size={15} className="text-emerald-300/80" /> 分析完成
+        </p>
+        <p className="flex items-center gap-2 text-sm text-zinc-300">
+          <ConvergenceIcon
+            size={15}
+            className={convergenceTone}
+            data-testid={diagnostics.converged ? "convergence-ok-icon" : "convergence-warning-icon"}
+          />
+          {diagnostics.converged ? "最新窗口正常收敛" : "最新窗口需关注"}
+        </p>
+        <p className="flex items-center gap-2 text-sm text-zinc-300">
+          <CheckCircle2 size={15} className="text-emerald-300/80" /> 数据可用
+        </p>
+      </div>
+      <details className="mt-7 border-t border-white/[0.07] pt-5 text-sm text-zinc-400">
+        <summary className="cursor-pointer select-none text-zinc-300">高级信息</summary>
+        <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div><dt>最新 R²</dt><dd>{diagnostics.r2?.toFixed(3) ?? "—"}</dd></div>
+          <div><dt>Converged</dt><dd>{String(diagnostics.converged)}</dd></div>
+          <div><dt>模型版本</dt><dd>{diagnostics.model_version}</dd></div>
+          <div><dt>模型运行时间</dt><dd>{analysisTime ? `${analysisTime.toFixed(2)}s` : "—"}</dd></div>
+          <div><dt>窗口</dt><dd>{diagnostics.parameters.window}</dd></div>
+          <div><dt>半衰期</dt><dd>{diagnostics.parameters.half_life}</dd></div>
+          <div><dt>Alpha</dt><dd>{diagnostics.parameters.alpha}</dd></div>
+          <div><dt>数据截止日</dt><dd>{diagnostics.data_cutoff}</dd></div>
+        </dl>
+      </details>
+    </div>
   );
 }
 
@@ -179,26 +226,11 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
         <section id="method" className="result-section scroll-mt-24">
           <p className="section-index">06 / 模型状态</p>
           <h2 className="section-title">模型状态</h2>
-          <div className="result-card mt-8 p-6">
-            <div className="grid gap-4 sm:grid-cols-3">
-              {["分析完成", data.diagnostics.converged ? "最新窗口正常收敛" : "最新窗口需关注", "数据可用"].map((label) => (
-                <p key={label} className="flex items-center gap-2 text-sm text-zinc-300"><Check size={15} className="text-emerald-300/80" /> {label}</p>
-              ))}
-            </div>
-            <details className="mt-7 border-t border-white/[0.07] pt-5 text-sm text-zinc-400">
-              <summary className="cursor-pointer select-none text-zinc-300">高级信息</summary>
-              <dl className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <div><dt>最新 R²</dt><dd>{data.diagnostics.r2?.toFixed(3) ?? "—"}</dd></div>
-                <div><dt>Converged</dt><dd>{String(data.diagnostics.converged)}</dd></div>
-                <div><dt>模型版本</dt><dd>{data.diagnostics.model_version}</dd></div>
-                <div><dt>模型运行时间</dt><dd>{data.analysis_time ? `${data.analysis_time.toFixed(2)}s` : "—"}</dd></div>
-                <div><dt>窗口</dt><dd>{data.diagnostics.parameters.window}</dd></div>
-                <div><dt>半衰期</dt><dd>{data.diagnostics.parameters.half_life}</dd></div>
-                <div><dt>Alpha</dt><dd>{data.diagnostics.parameters.alpha}</dd></div>
-                <div><dt>数据截止日</dt><dd>{data.diagnostics.data_cutoff}</dd></div>
-              </dl>
-            </details>
-          </div>
+          <ModelStatus
+            credibility={data.credibility}
+            diagnostics={data.diagnostics}
+            analysisTime={data.analysis_time}
+          />
         </section>
 
         <section id="about" className="result-section scroll-mt-24">

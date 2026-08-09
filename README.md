@@ -10,6 +10,11 @@ FundTrace 基于基金公开披露、复权净值和申万行业收益数据，�
 
 Windows 用户双击 `启动FundTrace.bat`，浏览器会自动打开全新的本地 FundTrace 界面。第一次启动会自动创建本地 `.venv` 并安装 Python 依赖；发布包已包含 `frontend/dist`，最终用户不需要安装 Node.js。
 
+正常流程：输入基金代码 → 更新或读取已有数据 → 快速分析 → 查看 Dashboard。
+
+- 使用本地已有数据的快速分析约 15 秒。
+- 更新公开数据再分析的总耗时取决于网络和数据源响应，不包含在“约 15 秒”内。
+
 旧版 Streamlit 界面仍可通过 `启动基金高频分析.bat` 使用。
 
 命令行快速分析：
@@ -50,9 +55,15 @@ FundTrace 给出的是**隐含收益暴露**，不是实时真实持仓。披露
 
 ## Development Status
 
-- **MVP**：`v4-a2.1-stable`，稳定、快速，可开始前端开发和多基金测试。
+- **MVP UI V1.1**：React/FastAPI 本地产品界面可用，正在完成 release stabilization；下一步为多基金 MVP 测试。
 - **Research**：disclosure coverage 与 equity-cap 实验独立保留，不自动覆盖 MVP。
 - Phase A candidate 参数保持 `production_eligible=false`，不会作为默认生产参数。
+
+生产依赖精确版本保存在 `requirements-lock.txt`。`启动FundTrace.bat` 只有在依赖缺失或版本不匹配时才安装该 lock，不会每次启动都重新解析或升级依赖。更新依赖前必须运行：
+
+```bash
+python tools/check_production_regression.py 161005
+```
 
 ## 目录
 
@@ -64,6 +75,7 @@ FundTrace 给出的是**隐含收益暴露**，不是实时真实持仓。披露
 - `funds/<代码>/`：基金输入数据
 - `output/<代码>/`：运行输出
 - `tests/baseline/161005/`：V3 固定回归基线
+- `tests/baseline/v4_a2_1_production/`：A2.1 生产回归基线
 - `docs/development/`：迁移与性能研发记录
 
 ## 版本策略
