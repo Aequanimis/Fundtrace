@@ -216,6 +216,7 @@ def rolling_positions(
     anchor_mult=None,
     min_obs=60,
     verbose=True,
+    target_dates=None,
 ):
     """滚动窗口回归，输出周频行业仓位。
 
@@ -232,6 +233,8 @@ def rolling_positions(
     anchor_mult: 若给定（如 2.5），则 β_i ≤ anchor_mult × 模拟组合该行业权重 + 0.03
                  None 表示不锚定（纯净值回归）
     min_obs    : 窗口内最少有效观测
+    target_dates: 可选的目标日期集合。None 保持完整周频历史；传入时仅计算
+                  已存在于原始周频调仓日历中的日期。
 
     返回
     ----
@@ -259,6 +262,9 @@ def rolling_positions(
     # 输出时点
     rebal = pd.Series(1, index=idx).resample(freq).last().dropna().index
     rebal = [d for d in rebal if d >= idx[min_obs - 1]]
+    if target_dates is not None:
+        target_set = set(pd.DatetimeIndex(target_dates))
+        rebal = [d for d in rebal if d in target_set]
 
     rows, diags = [], []
     for d in rebal:
