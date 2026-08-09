@@ -26,6 +26,32 @@ python run_analysis.py 161005 --calibrate
 
 数据抓取、模型口径、结果解读和 V3 已知局限详见 [README_V3.md](README_V3.md) 与 [SKILL.md](SKILL.md)。
 
+## 当前功能
+
+- 从公开持仓披露、基金复权净值和申万行业收益数据估算周频隐含行业暴露。
+- 展示披露空窗期可能的行业调仓方向、拟合质量和约束诊断。
+- 保留本地 Streamlit 界面与命令行两种使用方式。
+
+## 输出说明
+
+运行后在 `output/<代码>/` 查看：
+
+- `report.md`：文字解读
+- `positions.png`：主要行业暴露图
+- `weekly_positions.csv`：周频行业暴露
+- `diagnostics.csv`：R²、Σβ 与收敛诊断
+- `sim_portfolio.csv`：季度模拟组合
+
+## 模型限制
+
+FundTrace 给出的是**隐含收益暴露**，不是实时真实持仓。披露覆盖度、权益上限口径、Ground Truth、港股和 stock-level 路径仍有研究空间；这些限制不阻塞当前 MVP 使用。
+
+## Development Status
+
+- **MVP**：`v4-a2.1-stable`，稳定、快速，可开始前端开发和多基金测试。
+- **Research**：disclosure coverage 与 equity-cap 实验独立保留，不自动覆盖 MVP。
+- Phase A candidate 参数保持 `production_eligible=false`，不会作为默认生产参数。
+
 ## 目录
 
 - `lib/`：模型与回归实现
@@ -38,6 +64,7 @@ python run_analysis.py 161005 --calibrate
 ## 版本策略
 
 - `v3-baseline`：迁移成功、尚未进行 V4 性能修改的冻结版本
-- `feat/v4-performance-phase-a`：V4 Phase A 纯性能优化
+- `v4-a2.1-stable`：当前 MVP 稳定基线
+- Research branches：披露和 equity-cap 实验资产，不合并进 MVP
 
-V4 Phase A 不修改模型数学目标、参数网格、Ground Truth 或生产 solver。
+更多状态见 [MVP_STATUS.md](docs/development/MVP_STATUS.md)、[VERSION_HISTORY.md](docs/development/VERSION_HISTORY.md) 和 [RESEARCH_BACKLOG.md](docs/research/RESEARCH_BACKLOG.md)。
