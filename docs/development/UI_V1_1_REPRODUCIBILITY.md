@@ -34,3 +34,15 @@ The production reference is the formally accepted `v4-a2.1-stable` asset:
 - Archive: `FundTrace_V4_A2.1_验收包.zip::Fundtrace/output/161005/weekly_positions.csv`
 - SHA256: `ecc1a1cfa1d851347d27fb63560cdfbd625001cdb23c646af4e572229584169f`
 - Repository fixture: `tests/baseline/v4_a2_1_production/`
+
+## Clean environment verification
+
+`DEPENDENCY_LOCK_VERIFIED`
+
+A newly created Windows venv installed `requirements-lock.txt`, passed the exact-version check, and ran `python tools/check_production_regression.py 161005` successfully:
+
+- Analysis time: `14.984574200119823` seconds.
+- Industry columns: identical, `27/27`; coal absent.
+- Weekly maximum absolute difference: `0.0`.
+- Diagnostics Σβ maximum absolute difference: `0.0`.
+- Top1 / Top5: `1044/1044` / `1044/1044`.
