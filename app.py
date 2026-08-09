@@ -10,9 +10,12 @@ from __future__ import annotations
 import csv
 import json
 import os
+import queue
 import re
 import subprocess
 import sys
+import threading
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -73,12 +76,17 @@ def _decode_output(data: bytes | None) -> str:
     return data.decode("utf-8", errors="replace")
 
 
-def run_project_script(args: Sequence[str], timeout: int = 7200) -> CommandResult:
+def run_project_script(
+    args: Sequence[str],
+    timeout: int = 7200,
+    output_callback=None,
+) -> CommandResult:
     """用当前 Python 调用项目脚本；不经过 shell。"""
     command = (sys.executable, *map(str, args))
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUTF8"] = "1"
+    env["PYTHONUNBUFFERED"] = "1"
     try:
         process = subprocess.Popen(
             list(command),
@@ -88,7 +96,37 @@ def run_project_script(args: Sequence[str], timeout: int = 7200) -> CommandResul
             stderr=subprocess.PIPE,
             env=env,
         )
-        stdout, stderr = process.communicate(timeout=timeout)
+        if output_callback is None:
+            stdout, stderr = process.communicate(timeout=timeout)
+        else:
+            messages: queue.Queue[tuple[str, bytes | None]] = queue.Queue()
+
+            def read_stream(name, stream):
+                for line in iter(stream.readline, b""):
+                    messages.put((name, line))
+                messages.put((name, None))
+
+            for name, stream in (("stdout", process.stdout), ("stderr", process.stderr)):
+                threading.Thread(
+                    target=read_stream, args=(name, stream), daemon=True
+                ).start()
+            chunks = {"stdout": [], "stderr": []}
+            closed = set()
+            started = time.monotonic()
+            while len(closed) < 2 or process.poll() is None:
+                if time.monotonic() - started >= timeout:
+                    raise subprocess.TimeoutExpired(command, timeout)
+                try:
+                    name, line = messages.get(timeout=0.1)
+                except queue.Empty:
+                    continue
+                if line is None:
+                    closed.add(name)
+                    continue
+                chunks[name].append(line)
+                output_callback(_decode_output(line).rstrip())
+            stdout = b"".join(chunks["stdout"])
+            stderr = b"".join(chunks["stderr"])
         return CommandResult(
             command=command,
             returncode=process.returncode,
@@ -309,14 +347,34 @@ def run_analysis_flow(st, code: str, update_fund: bool, calibrate: bool, update_
         arguments = ["run_analysis.py", code]
         if calibrate:
             arguments.append("--calibrate")
-        analysis_timeout = 21600 if calibrate else 7200
-        result = run_project_script(arguments, timeout=analysis_timeout)
+        analysis_timeout = 420 if calibrate else 7200
+
+        def show_calibration_progress(line: str) -> None:
+            match = re.search(r"已完成：(\d+) / (\d+)", line)
+            if match:
+                done, total = map(int, match.groups())
+                percent = 55 + int(30 * done / max(total, 1))
+                progress.progress(percent, text=line)
+
+        result = run_project_script(
+            arguments,
+            timeout=analysis_timeout,
+            output_callback=show_calibration_progress if calibrate else None,
+        )
         logs.append(result.as_log())
         if not result.ok:
             progress.empty()
             st.error(friendly_error("analysis", result))
             _show_logs(st, logs, "查看技术错误信息")
             return
+
+        combined_output = f"{result.stdout}\n{result.stderr}"
+        if "TIMEOUT_SAFE_STOP" in combined_output or "TIMEOUT_HARD_KILL" in combined_output:
+            st.warning(
+                "本次完整标定未能在5分钟限制内完成，已安全停止。\n\n"
+                "未完成结果不会用于正式分析。\n\n"
+                "快速分析继续使用默认参数或已有有效参数。"
+            )
 
         progress.progress(90, text="正在生成分析报告……")
         st.session_state["selected_result_code"] = code
@@ -366,7 +424,16 @@ def render_app() -> None:
 
         st.markdown("**分析设置**")
         update_fund = st.checkbox("自动获取 / 更新该基金数据", value=True)
-        calibrate = st.checkbox("使用参数标定（推荐，耗时会更长）", value=True)
+        analysis_mode = st.radio(
+            "分析模式",
+            (
+                "快速追踪（推荐）",
+                "重新标定模型（高级，最长5分钟）",
+            ),
+            index=0,
+            help="完整标定超时会自动停止并保存进度；未完成结果不会投入正式分析。",
+        )
+        calibrate = analysis_mode.startswith("重新标定模型")
         update_base = st.checkbox("更新申万行业基础数据", value=False)
         st.caption("基础数据无需每次更新，仅当距离上次更新时间较久时再执行。")
         latest = base_latest_date()

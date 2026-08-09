@@ -5,7 +5,7 @@
 
 用法：
     python run_analysis.py 001234                  # 用默认参数
-    python run_analysis.py 001234 --calibrate      # 先用年报标定参数（推荐，慢几分钟）
+    python run_analysis.py 001234 --calibrate      # 高级 Phase A 标定（最长 5 分钟）
     python run_analysis.py 001234 --window 120 --half-life 40 --alpha 1e-6
 
 前置：
@@ -23,6 +23,7 @@
 import argparse
 import os
 import sys
+import time
 import warnings
 
 import numpy as np
@@ -330,6 +331,7 @@ def write_report(path, code, sp, sim_mat, info, W, D, mae_info,
 # ---------------------------------------------------------------- 主流程
 
 def main():
+    run_started = time.monotonic()
     ap = argparse.ArgumentParser(description="基金高频行业仓位分析")
     ap.add_argument("code", help="6 位基金代码")
     ap.add_argument("--calibrate", action="store_true",
@@ -343,6 +345,8 @@ def main():
                          "替代默认的申万行业指数。需要预先生成 stock_klines.csv。"
                          "仅在 FULL 模式下可用，TOP10_ONLY 强制 index_proxy。"
                          "stock_level 下默认不设 anchor 上界。")
+    ap.add_argument("--calibration-timeout-seconds", type=float, default=None,
+                    help="标定 worker 硬超时；生产默认 300 秒，仅用于测试覆盖")
     args = ap.parse_args()
 
     code = args.code.zfill(6)
@@ -437,24 +441,24 @@ def main():
         if not len(real_hold):
             print("  ⚠ 没有真实全持股，无法标定，改用默认参数")
         else:
-            print("\n[3.5/5] 参数标定（时间序列交叉验证）")
-            from lib.calibrate import grid_search
-            kwargs = {"fund_ret": fund_ret, "factor_ret": factor_ret,
-                      "sim_mat": sim_mat, "real_holdings": real_hold,
-                      "stock2sw": stock2sw, "cv": True, "verbose": True}
-            # stock_level 下强制只搜 anchor=None；默认路径不传参，用函数默认 (None, 2.5)
-            if args.stock_level:
-                kwargs["anchor_mults"] = (None,)
-            best, tbl, cv_mae = grid_search(**kwargs)
-            params = {"window": int(best["window"]), "half_life": int(best["half_life"]),
-                      "alpha": float(best["alpha"]), "anchor_mult": best["anchor_mult"],
-                      "source": best.get("source", "TS-CV 标定"),
-                      "cv_mae": cv_mae}
-            outdir = os.path.join(ROOT, "output", code)
-            os.makedirs(outdir, exist_ok=True)
-            if tbl is not None and len(tbl):
-                tbl.to_csv(os.path.join(outdir, "calibration.csv"),
-                           index=False, encoding="utf-8-sig")
+            print("\n[3.5/5] Phase A 参数标定（独立 worker，最长 5 分钟）")
+            from lib.calibration_watchdog import run_calibration_watchdog
+            calibration = run_calibration_watchdog(
+                code,
+                ROOT,
+                stock_level=args.stock_level,
+                timeout_seconds=args.calibration_timeout_seconds,
+            )
+            status = calibration["status"]
+            print(f"  标定状态：{status} | 完成 "
+                  f"{calibration['completed_combos']}/{calibration['total_combos']} | "
+                  f"耗时 {calibration['elapsed_seconds']:.2f}s")
+            if status == "COMPLETED":
+                print("  Phase A candidate 已保存，但不会用于本次正式分析。")
+            elif status in ("TIMEOUT_SAFE_STOP", "TIMEOUT_HARD_KILL"):
+                print("  未完成结果不会用于正式分析；本次继续使用命令行/稳健默认参数。")
+            else:
+                print("  ⚠ 标定 worker 未成功完成；本次继续使用命令行/稳健默认参数。")
 
     print("\n[4/5] Step 2  滚动回归升频")
     W, D = rolling_positions(fund_ret, factor_ret, sim_mat=sim_mat,
@@ -486,6 +490,10 @@ def main():
               "diagnostics.csv"] + (["positions.png"] if chart_ok else []):
         print(f"      {f}")
     print("\n完成。先看 report.md 第 0 节判断这份结果能不能用。")
+    total_elapsed = time.monotonic() - run_started
+    if not args.calibrate and total_elapsed > 120:
+        with open(os.path.join(outdir, "fast_analysis_timeout.log"), "w", encoding="utf-8") as f:
+            f.write(f"fast analysis elapsed_seconds={total_elapsed:.3f}\n")
 
 
 if __name__ == "__main__":

@@ -251,8 +251,9 @@ def write_timeout_report(output_dir, checkpoint, meta, watchdog=False, residual_
         "Partial calibration results are diagnostic only and are not production parameters.",
     ])
     _atomic_write_text(output_dir / "performance_timeout_report.md", text)
-    project_root = output_dir.parent.parent
-    _atomic_write_text(project_root / "docs" / "development" / "performance_timeout_report.md", text)
+    if output_dir.parent.name == "output":
+        project_root = output_dir.parent.parent
+        _atomic_write_text(project_root / "docs" / "development" / "performance_timeout_report.md", text)
 
 
 def run_phase_a_grid(

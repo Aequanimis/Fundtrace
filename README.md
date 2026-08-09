@@ -16,6 +16,14 @@ Windows 用户双击 `启动基金高频分析.bat`，输入 6 位基金代码�
 python run_analysis.py 161005
 ```
 
+高级完整标定需显式选择 GUI 的“重新标定模型”或执行：
+
+```bash
+python run_analysis.py 161005 --calibrate
+```
+
+完整标定在独立 worker 中运行：285 秒安全停止、300 秒硬 watchdog，逐组合原子保存 checkpoint。Phase A 只生成候选参数，不会替换正式参数或改变当次快速分析结果。
+
 数据抓取、模型口径、结果解读和 V3 已知局限详见 [README_V3.md](README_V3.md) 与 [SKILL.md](SKILL.md)。
 
 ## 目录
