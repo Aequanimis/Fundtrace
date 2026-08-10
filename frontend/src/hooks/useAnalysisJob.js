@@ -51,7 +51,13 @@ export function useAnalysisJob() {
           return;
         }
         if (job.status === "error") {
-          throw Object.assign(new Error(job.message || "分析未能完成"), {
+          const dataUpdateFailed = Boolean(job.can_use_local_data)
+            || job.message?.includes("数据更新失败");
+          const errorMessage = dataUpdateFailed
+            ? "公开数据更新失败，可尝试使用本地数据。"
+            : "分析运行失败，可查看高级日志。";
+          throw Object.assign(new Error(errorMessage), {
+            code: dataUpdateFailed ? "DATA_UPDATE_ERROR" : "ANALYSIS_ERROR",
             canUseLocalData: Boolean(job.can_use_local_data),
             fundCode,
           });
@@ -62,6 +68,7 @@ export function useAnalysisJob() {
       if (activeRun.current !== runId) return;
       setError({
         message: reason.message || "分析未能完成",
+        code: reason.code || "ANALYSIS_ERROR",
         canUseLocalData: Boolean(reason.canUseLocalData),
         fundCode,
       });
