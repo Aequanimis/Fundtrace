@@ -27,6 +27,7 @@ import pandas as pd
 
 from .solver import exp_decay_weights, solve_weighted_lasso, solve_weighted_lasso_legacy
 from . import taxonomy as tx
+from .disclosure import resolve_equity_cap
 
 
 # ---------------------------------------------------------------- 数据准备
@@ -212,6 +213,8 @@ def rolling_positions(
     half_life=40,
     alpha=1e-6,
     equity_cap="auto",
+    equity_cap_mode="legacy",
+    disclosure_index=None,
     freq="W-FRI",
     anchor_mult=None,
     min_obs=60,
@@ -229,6 +232,9 @@ def rolling_positions(
     half_life  : 时间权重半衰期（交易日），<=0 为等权
     alpha      : L1 惩罚强度
     equity_cap : Σβ 上界
+    equity_cap_mode: ``legacy`` 保留 A2.1 的模拟组合上限；``disclosure``
+                     使用按字段可用日期筛选的行业配置上限
+    disclosure_index: ``equity_cap_mode='disclosure'`` 时使用的披露索引
     freq       : 输出频率，默认每周五
     anchor_mult: 若给定（如 2.5），则 β_i ≤ anchor_mult × 模拟组合该行业权重 + 0.03
                  None 表示不锚定（纯净值回归）
@@ -242,6 +248,9 @@ def rolling_positions(
       weights_df : 周频 × 行业 的仓位矩阵
       diag_df    : 每期的 R²、Σβ、收敛情况
     """
+    if equity_cap_mode not in {"legacy", "disclosure"}:
+        raise ValueError("equity_cap_mode must be 'legacy' or 'disclosure'")
+
     # 对齐
     idx = fund_ret.index.intersection(factor_ret.index)
     y_all = fund_ret.reindex(idx).astype(float)
@@ -284,11 +293,23 @@ def rolling_positions(
 
         prior = _latest_sim_row(sim_disc, d) if sim_disc is not None else None
 
-        # Σβ 上界：'auto' 表示从已披露仓位推（+5% 缓冲），比设死一个常数准得多。
-        # 设死会让回归顶着上限跑，把权益仓位系统性高估。
-        cap_t = equity_cap
-        if isinstance(equity_cap, str) and equity_cap == "auto":
-            cap_t = min(float(prior.sum()) * 1.05, 0.98) if prior is not None else 0.95
+        if equity_cap_mode == "disclosure":
+            cap_resolution = resolve_equity_cap(disclosure_index, d)
+            cap_t = cap_resolution["cap_value"]
+        else:
+            # A2.1 legacy path: preserve the historical simulation-based cap
+            # exactly for controlled A/B comparison.
+            cap_t = equity_cap
+            if isinstance(equity_cap, str) and equity_cap == "auto":
+                cap_t = min(float(prior.sum()) * 1.05, 0.98) if prior is not None else 0.95
+            cap_resolution = {
+                "cap_value": float(cap_t),
+                "cap_basis": "LEGACY_SIM_PORTFOLIO" if prior is not None else "LEGACY_CONSTANT_FALLBACK",
+                "source_period": None,
+                "source_available_date": None,
+                "reported_equity_ratio": None,
+                "flags": "",
+            }
 
         # 逐行业 β 上界锚定
         cap_vec = None
@@ -305,6 +326,12 @@ def rolling_positions(
             "date": d, "r2": res["r2"], "sum_beta": res["sum_beta"],
             "converged": res["converged"], "n_obs": len(y),
             "n_active": int((res["beta"] > 1e-4).sum()),
+            "equity_cap": float(cap_t),
+            "cap_basis": cap_resolution["cap_basis"],
+            "cap_source_period": cap_resolution["source_period"],
+            "cap_available_date": cap_resolution["source_available_date"],
+            "cap_reported_equity_ratio": cap_resolution["reported_equity_ratio"],
+            "cap_flags": cap_resolution["flags"],
         })
 
     if not rows:

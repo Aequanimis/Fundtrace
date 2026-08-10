@@ -15,6 +15,7 @@
 产出（写到 output/<code>/）：
     weekly_positions.csv    周频行业仓位矩阵
     diagnostics.csv         每期 R² / Σβ / 收敛情况
+    equity_cap_audit.csv    B2 的旧/新权益上限对照（161005 disclosure 模式）
     sim_portfolio.csv       季度模拟组合
     report.md               分析报告
     positions.png           仓位曲线图
@@ -40,6 +41,7 @@ from lib.simulate import (SimulatedPortfolio, validate_against_real,
 from lib.regress import (nav_to_returns, index_to_returns, rolling_positions,
                          reconcile_with_report, detect_shifts, style_drift,
                          disclosure_align, build_stock_factors)
+from lib.equity_cap_audit import write_equity_cap_audit
 
 
 # ---------------------------------------------------------------- 载入
@@ -247,7 +249,10 @@ def write_report(path, code, sp, sim_mat, info, W, D, mae_info,
     a(f"| 时间权重半衰期 | {params['half_life']} 天 | 0 表示等权 |")
     a(f"| Lasso 强度 alpha | {params['alpha']:.1e} | |")
     a(f"| 逐行业锚定倍数 | {params['anchor_mult']} | None 表示纯净值回归 |")
-    a(f"| Σβ 上界 | 自动（按已披露仓位 ×1.05） | |")
+    if params.get("equity_cap_mode") == "disclosure":
+        a("| Σβ 上界 | 最近已公开行业配置 ×1.05（无可见配置时 95%） | |")
+    else:
+        a("| Σβ 上界 | 自动（按已披露模拟仓位 ×1.05） | |")
     a(f"| 标定方式 | {params.get('source', '默认值')} | |")
     mode_label = {"index_proxy": "申万行业指数", 
                   "stock_level": "个股行情穿透（子组合因子）"}
@@ -262,7 +267,18 @@ def write_report(path, code, sp, sim_mat, info, W, D, mae_info,
     a("## 2. 最新一期隐含行业仓位\n")
     cur = W.iloc[-1].sort_values(ascending=False)
     cur = cur[cur > 0.005]
-    a(f"截至 {W.index[-1]:%Y-%m-%d}，权益仓位合计 **{W.iloc[-1].sum():.1%}**\n")
+    a(f"截至 {W.index[-1]:%Y-%m-%d}，隐含权益暴露合计 **{W.iloc[-1].sum():.1%}**\n")
+    if "cap_basis" in D.columns:
+        latest_cap = D.iloc[-1]
+        source_period = latest_cap.get("cap_source_period")
+        available_date = latest_cap.get("cap_available_date")
+        source_note = ""
+        if pd.notna(source_period) and str(source_period):
+            source_note += f"，报告期 {source_period}"
+        if pd.notna(available_date) and str(available_date):
+            source_note += f"，可用日 {available_date}"
+        a(f"- **权益暴露上限依据**：{latest_cap['cap_basis']}"
+          f"（上限 {latest_cap['equity_cap']:.1%}{source_note}）。\n")
     a("| 行业 | 仓位 |")
     a("|---|---|")
     for k, v in cur.head(15).items():
@@ -322,7 +338,7 @@ def write_report(path, code, sp, sim_mat, info, W, D, mae_info,
     a("- 行业口径为申万一级（研报主口径为中信，需 Wind 授权；研报也测过申万，结论一致）。")
     a("- 行业子组合收益用行业指数代理，未穿透到该基金实际持股，"
       "这会损失『基金在行业内选股偏离』的信息。")
-    a("- 所有季报数据按披露滞后（报告期 +30 天）对齐，避免前视偏差。")
+    a("- 行业配置缺少真实公告日时，权益上限保守按报告期 +30 个自然日可用，避免前视偏差。")
 
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
@@ -340,6 +356,8 @@ def main():
     ap.add_argument("--half-life", type=int, default=40)
     ap.add_argument("--alpha", type=float, default=1e-6)
     ap.add_argument("--anchor-mult", type=float, default=None)
+    ap.add_argument("--equity-cap-mode", choices=("legacy", "disclosure"), default="disclosure",
+                    help="权益暴露上限来源；默认使用按可用日期筛选的行业配置")
     ap.add_argument("--stock-level", action="store_true",
                     help="用个股行情构建行业子组合因子（stock_level 路径），"
                          "替代默认的申万行业指数。需要预先生成 stock_klines.csv。"
@@ -357,8 +375,17 @@ def main():
     print("\n[1/5] 载入数据")
     idx_long, stock2sw = load_base()
     nav, hold, alloc = load_fund(code)
+    disclosure_index = None
+    if args.equity_cap_mode == "disclosure":
+        disclosure_path = os.path.join(ROOT, "funds", code, "disclosure_index.csv")
+        if not os.path.exists(disclosure_path):
+            sys.exit(f"缺少披露索引：{disclosure_path}\n"
+                     "请先在本地生成 disclosure_index.csv 后再运行 disclosure 模式")
+        disclosure_index = pd.read_csv(disclosure_path)
     print(f"  行业指数 {idx_long['industry_name'].nunique()} 个 | "
           f"个股映射 {len(stock2sw)} 只 | 净值 {len(nav)} 行 | 持股 {len(hold)} 行")
+    if disclosure_index is not None:
+        print(f"  权益上限：disclosure（本地披露索引 {len(disclosure_index)} 期）")
 
     print("\n[2/5] Step 1  季度模拟组合")
     sp = SimulatedPortfolio(hold, alloc, stock2sw, verbose=True)
@@ -433,6 +460,7 @@ def main():
 
     params = {"window": args.window, "half_life": args.half_life,
               "alpha": args.alpha, "anchor_mult": args.anchor_mult,
+              "equity_cap_mode": args.equity_cap_mode,
               "source": "命令行/默认值"}
 
     cv_mae = None  # 交叉验证 MAE 初始为空
@@ -464,6 +492,8 @@ def main():
     W, D = rolling_positions(fund_ret, factor_ret, sim_mat=sim_mat,
                              window=params["window"], half_life=params["half_life"],
                              alpha=params["alpha"], equity_cap="auto",
+                             equity_cap_mode=args.equity_cap_mode,
+                             disclosure_index=disclosure_index,
                              anchor_mult=params["anchor_mult"], verbose=True)
 
     print("\n[5/5] 输出")
@@ -473,6 +503,10 @@ def main():
     W.to_csv(os.path.join(outdir, "weekly_positions.csv"), encoding="utf-8-sig")
     D.to_csv(os.path.join(outdir, "diagnostics.csv"), encoding="utf-8-sig")
     sim_mat.to_csv(os.path.join(outdir, "sim_portfolio.csv"), encoding="utf-8-sig")
+    baseline_path = os.path.join(ROOT, "tests", "baseline", "phaseB2_legacy_equity_cap.csv")
+    audit_path = os.path.join(outdir, "equity_cap_audit.csv")
+    if args.equity_cap_mode == "disclosure" and os.path.exists(baseline_path):
+        write_equity_cap_audit(baseline_path, D, audit_path)
 
     rec = reconcile_with_report(W, sim_mat)
     shifts = detect_shifts(W, top_n=5, lookback=4)
@@ -487,7 +521,8 @@ def main():
 
     print(f"  已写入 output/{code}/")
     for f in ["report.md", "weekly_positions.csv", "sim_portfolio.csv",
-              "diagnostics.csv"] + (["positions.png"] if chart_ok else []):
+              "diagnostics.csv"] + (["equity_cap_audit.csv"] if os.path.exists(audit_path) else []) \
+            + (["positions.png"] if chart_ok else []):
         print(f"      {f}")
     print("\n完成。先看 report.md 第 0 节判断这份结果能不能用。")
     total_elapsed = time.monotonic() - run_started
