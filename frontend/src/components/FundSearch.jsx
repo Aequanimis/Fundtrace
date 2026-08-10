@@ -28,14 +28,14 @@ export function FundSearch({ onAnalyze, disabled = false, initialCode = "" }) {
             autoComplete="off"
             placeholder="输入6位基金代码，例如 161005"
             aria-label="基金代码"
-            className="h-14 min-w-0 flex-1 bg-transparent text-base text-white outline-none placeholder:text-zinc-500 sm:h-16"
+            className="h-16 min-w-0 flex-1 bg-transparent text-lg text-white outline-none placeholder:text-zinc-500 sm:h-[72px]"
             disabled={disabled}
           />
         </div>
         <button
           type="submit"
           disabled={disabled}
-          className="primary-cta m-1.5 flex h-12 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[54px]"
+          className="primary-cta m-1.5 flex h-14 items-center justify-center gap-2 rounded-full bg-white px-8 text-lg font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[62px]"
         >
           开始分析 <ArrowRight size={16} />
         </button>

@@ -7,7 +7,7 @@ import {
   RefreshCcw,
   TriangleAlert,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -20,7 +20,9 @@ import {
   YAxis,
 } from "recharts";
 
-const LINE_COLORS = ["#fafafa", "#a1a1aa", "#d4d4d8", "#71717a", "#e4e4e7", "#52525b", "#cbd5e1", "#94a3b8"];
+const LINE_COLORS = ["#4DA3FF", "#FFB547", "#2DD4BF", "#E879F9", "#A3E635", "#FB7185", "#A78BFA", "#38BDF8"];
+const FONT_SCALES = [90, 100, 115, 130];
+const FONT_SCALE_KEY = "fundtrace-font-scale";
 const percentage = (value, digits = 1) => `${((value || 0) * 100).toFixed(digits)}%`;
 const points = (value) => `${value >= 0 ? "+" : ""}${((value || 0) * 100).toFixed(1)}pp`;
 
@@ -49,6 +51,34 @@ function ChangeList({ title, items, direction }) {
         )) : <p className="py-4 text-sm text-zinc-600">最近四周没有明显变化</p>}
       </div>
     </article>
+  );
+}
+
+function FontScaleControl({ value, onChange }) {
+  const index = FONT_SCALES.indexOf(value);
+  return (
+    <div className="font-scale-control" role="group" aria-label="Dashboard font size">
+      <button type="button" aria-label="Decrease font size" disabled={index <= 0} onClick={() => onChange(FONT_SCALES[index - 1])}>A−</button>
+      <output aria-label="Current font size">{value}%</output>
+      <button type="button" aria-label="Increase font size" disabled={index >= FONT_SCALES.length - 1} onClick={() => onChange(FONT_SCALES[index + 1])}>A+</button>
+    </div>
+  );
+}
+
+function TrendTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/90 px-4 py-3 text-sm shadow-2xl backdrop-blur-xl">
+      <p className="mb-2 text-zinc-500">{label}</p>
+      <div className="space-y-1.5">
+        {payload.map((entry) => (
+          <p key={entry.dataKey} className="flex items-center justify-between gap-6 text-zinc-300">
+            <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />{entry.dataKey}</span>
+            <span style={{ color: entry.color }}>{percentage(entry.value)}</span>
+          </p>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -102,7 +132,32 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
   const [showAll, setShowAll] = useState(false);
   const defaults = data.top_industries.slice(0, 5).map((item) => item.industry);
   const [selected, setSelected] = useState(defaults);
+  const [fontScale, setFontScale] = useState(() => {
+    const stored = Number(window.localStorage.getItem(FONT_SCALE_KEY));
+    return FONT_SCALES.includes(stored) ? stored : 115;
+  });
   const chartIndustries = showAll ? data.all_industries : data.top_industries;
+  const industryColors = useMemo(
+    () => Object.fromEntries(data.all_industries.map((item, index) => [item.industry, LINE_COLORS[index % LINE_COLORS.length]])),
+    [data.all_industries],
+  );
+  const selectedColors = useMemo(() => {
+    const used = new Set();
+    return Object.fromEntries(selected.map((industry) => {
+      const preferred = Math.max(0, LINE_COLORS.indexOf(industryColors[industry]));
+      let color = industryColors[industry];
+      for (let offset = 0; offset < LINE_COLORS.length; offset += 1) {
+        const candidate = LINE_COLORS[(preferred + offset) % LINE_COLORS.length];
+        if (!used.has(candidate)) {
+          color = candidate;
+          break;
+        }
+      }
+      used.add(color);
+      return [industry, color];
+    }));
+  }, [industryColors, selected]);
+  const chartFontSize = Math.round(11 * fontScale / 100);
   const trendData = useMemo(
     () => data.trend.map((row) => ({ date: row.date.slice(5), ...row.values })),
     [data.trend],
@@ -115,10 +170,14 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
     });
   };
 
+  useEffect(() => {
+    window.localStorage.setItem(FONT_SCALE_KEY, String(fontScale));
+  }, [fontScale]);
+
   const scrollToDownloads = () => document.getElementById("downloads")?.scrollIntoView({ behavior: "smooth" });
 
   return (
-    <main className="results-enter relative z-20 min-h-screen bg-black text-white">
+    <main className="results-dashboard results-enter relative z-20 min-h-screen bg-black text-white" style={{ "--dashboard-scale": fontScale / 100 }}>
       <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-black/90 px-4 py-4 backdrop-blur-xl sm:px-6 md:px-12">
         <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-5">
@@ -128,6 +187,7 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
             <p className="hidden text-xs text-zinc-500 md:block">最新分析 <span className="ml-2 text-zinc-300">{data.latest_date}</span></p>
           </div>
           <div className="flex items-center gap-2">
+            <FontScaleControl value={fontScale} onChange={setFontScale} />
             <button type="button" onClick={() => onAnalyze(data.fund_code, false)} className="secondary-button"><RefreshCcw size={14} /> 重新分析</button>
             <button type="button" onClick={scrollToDownloads} className="primary-small"><Download size={14} /> 下载</button>
           </div>
@@ -158,8 +218,8 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartIndustries} layout="vertical" margin={{ top: 10, right: 28, left: 18, bottom: 4 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" horizontal={false} />
-                <XAxis type="number" tickFormatter={(value) => percentage(value, 0)} stroke="#52525b" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="industry" width={76} stroke="#71717a" tick={{ fontSize: 11 }} />
+                <XAxis type="number" tickFormatter={(value) => percentage(value, 0)} stroke="#52525b" tick={{ fontSize: chartFontSize }} />
+                <YAxis type="category" dataKey="industry" width={Math.round(76 * fontScale / 100)} stroke="#71717a" tick={{ fontSize: chartFontSize }} />
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} contentStyle={{ background: "#090909", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12 }} formatter={(value) => [percentage(value), "隐含暴露"]} />
                 <Bar dataKey="exposure" fill="#f4f4f5" radius={[0, 5, 5, 0]} maxBarSize={18} />
               </BarChart>
@@ -189,7 +249,9 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
                 type="button"
                 onClick={() => toggleIndustry(item.industry)}
                 className={`industry-chip ${selected.includes(item.industry) ? "is-selected" : ""}`}
+                style={{ "--chip-color": selectedColors[item.industry] || industryColors[item.industry] }}
               >
+                {selected.includes(item.industry) && <span className="industry-chip-dot" aria-hidden="true" />}
                 {item.industry}
               </button>
             ))}
@@ -198,11 +260,11 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData} margin={{ top: 12, right: 12, left: -12, bottom: 4 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="date" stroke="#52525b" tick={{ fontSize: 11 }} minTickGap={32} />
-                <YAxis stroke="#52525b" tick={{ fontSize: 11 }} tickFormatter={(value) => percentage(value, 0)} />
-                <Tooltip contentStyle={{ background: "#090909", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12 }} formatter={(value, name) => [percentage(value), name]} />
-                {selected.map((industry, index) => (
-                  <Line key={industry} type="monotone" dataKey={industry} dot={false} stroke={LINE_COLORS[index]} strokeWidth={1.6} connectNulls />
+                <XAxis dataKey="date" stroke="#52525b" tick={{ fontSize: chartFontSize }} minTickGap={32} />
+                <YAxis stroke="#52525b" tick={{ fontSize: chartFontSize }} tickFormatter={(value) => percentage(value, 0)} />
+                <Tooltip content={<TrendTooltip />} />
+                {selected.map((industry) => (
+                  <Line key={industry} type="monotone" dataKey={industry} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} stroke={selectedColors[industry]} strokeWidth={2.3} connectNulls />
                 ))}
               </LineChart>
             </ResponsiveContainer>
