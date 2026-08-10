@@ -4,6 +4,7 @@ import App from "./App";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("FundTrace UI", () => {
@@ -72,5 +73,45 @@ describe("FundTrace UI", () => {
 
     expect(await screen.findByText("分析请求失败（HTTP 422）：测试请求无效"))
       .toBeInTheDocument();
+  });
+
+  it("opens a saved result directly after a refresh without rerunning the model", async () => {
+    window.history.replaceState(null, "", "/?result=110022");
+    const result = {
+      fund_code: "110022",
+      latest_date: "2026-08-07",
+      summary: {
+        sentence: "已保存结果",
+        main_industry: { industry: "食品饮料", exposure: 0.6 },
+        largest_increase: { industry: "食品饮料", delta: 0.08 },
+        largest_decrease: { industry: "汽车", delta: -0.05 },
+        implicit_exposure_sum: 0.94,
+      },
+      top_industries: [{ industry: "食品饮料", exposure: 0.6 }],
+      all_industries: [{ industry: "食品饮料", exposure: 0.6 }],
+      four_week_changes: { from_date: "2026-07-10", to_date: "2026-08-07", increases: [], decreases: [] },
+      trend: [],
+      disclosure_comparison: [],
+      credibility: null,
+      diagnostics: { converged: true, parameters: {} },
+      downloads: [],
+    };
+    const fetchMock = vi.fn((url) => {
+      if (url === "/api/health") {
+        return Promise.resolve(new Response(JSON.stringify({ status: "ok", app: "FundTrace", git_commit: "edc4455" }), { status: 200 }));
+      }
+      if (url === "/api/results/110022") {
+        return Promise.resolve(new Response(JSON.stringify(result), { status: 200 }));
+      }
+      return Promise.reject(new Error(`Unexpected request: ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByText("本次追踪")).toBeInTheDocument();
+    expect(screen.getByText("暂无趋势数据")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/api/results/110022", undefined);
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/analyze", expect.anything());
   });
 });

@@ -241,8 +241,14 @@ def frontend(full_path: str):
     candidate = (FRONTEND_DIST / full_path).resolve()
     dist = FRONTEND_DIST.resolve()
     if candidate.is_file() and dist in candidate.parents:
-        return FileResponse(candidate)
-    return FileResponse(index)
+        headers = {"Cache-Control": "public, max-age=31536000, immutable"} if "assets" in candidate.parts else {"Cache-Control": "no-cache"}
+        return FileResponse(candidate, headers=headers)
+    if full_path.startswith("assets/"):
+        # A stale Vite chunk must fail as an asset request, never be replaced with the
+        # SPA document. Returning index.html here turns a missing JavaScript module
+        # into an opaque runtime error after an otherwise successful analysis.
+        raise HTTPException(status_code=404, detail="Frontend asset not found")
+    return FileResponse(index, headers={"Cache-Control": "no-cache"})
 
 
 def run_local() -> None:

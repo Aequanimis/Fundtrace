@@ -118,7 +118,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @keyframes indeterminate { from { transform: translateX(-120%); } to { transform: translateX(360%); } }
 
 .results-enter { animation: resultsEnter 850ms cubic-bezier(.22,.8,.24,1) both; }
-.results-dashboard { --dashboard-scale: 1.15; }
+.results-dashboard { --dashboard-scale: 1.15; opacity: 1; visibility: visible; }
 .results-dashboard .text-xs { font-size: calc(.75rem * var(--dashboard-scale)); }
 .results-dashboard .text-sm { font-size: calc(.875rem * var(--dashboard-scale)); }
 .results-dashboard .text-base { font-size: calc(1rem * var(--dashboard-scale)); }
@@ -179,4 +179,5 @@ details dd { color: #d4d4d8; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
   .animate-blur-fade-up { opacity: 1; filter: none; transform: none; }
+  .results-enter { animation: none; opacity: 1; filter: none; transform: none; }
 }

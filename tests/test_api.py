@@ -66,6 +66,28 @@ def test_results_success_and_missing(monkeypatch):
     assert client.get("/api/results/161005").status_code == 404
 
 
+def test_frontend_serves_fresh_index_and_rejects_stale_assets(tmp_path, monkeypatch):
+    dist = tmp_path / "dist"
+    assets = dist / "assets"
+    assets.mkdir(parents=True)
+    (dist / "index.html").write_text("<!doctype html><title>FundTrace</title>", encoding="utf-8")
+    (assets / "index-current.js").write_text("export default 'current'", encoding="utf-8")
+    monkeypatch.setattr(server, "FRONTEND_DIST", dist)
+    client = TestClient(server.app)
+
+    index = client.get("/")
+    assert index.status_code == 200
+    assert index.headers["cache-control"] == "no-cache"
+
+    current = client.get("/assets/index-current.js")
+    assert current.status_code == 200
+    assert current.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+    stale = client.get("/assets/ResultsDashboard-stale.js")
+    assert stale.status_code == 404
+    assert stale.json()["detail"] == "Frontend asset not found"
+
+
 def test_update_failure_offers_local_fallback(tmp_path, monkeypatch):
     fund_dir = tmp_path / "funds" / "161005"
     fund_dir.mkdir(parents=True)

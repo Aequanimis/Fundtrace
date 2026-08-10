@@ -1,14 +1,10 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CinematicBackground } from "./components/CinematicBackground";
 import { Hero } from "./components/Hero";
+import { ResultDashboardBoundary } from "./components/ResultDashboardBoundary";
+import { ResultsDashboard } from "./components/ResultsDashboard";
 import { useAnalysisJob } from "./hooks/useAnalysisJob";
 import { getRuntimeIdentity } from "./lib/api";
-
-const ResultsDashboard = lazy(() =>
-  import("./components/ResultsDashboard").then((module) => ({
-    default: module.ResultsDashboard,
-  })),
-);
 
 function RuntimeBuildInfo({ identity }) {
   const commit = identity?.git_commit;
@@ -29,6 +25,13 @@ export default function App() {
   const [runtimeIdentity, setRuntimeIdentity] = useState(null);
   const backgroundState = analysis.uiState === "success" ? "results" : analysis.uiState;
 
+  const resetToHome = useCallback(() => {
+    analysis.reset();
+    const url = new URL(window.location.href);
+    url.searchParams.delete("result");
+    window.history.replaceState(null, "", url);
+  }, [analysis.reset]);
+
   useEffect(() => {
     let active = true;
     getRuntimeIdentity()
@@ -41,17 +44,31 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const savedFundCode = new URLSearchParams(window.location.search).get("result");
+    if (/^\d{6}$/.test(savedFundCode || "")) analysis.loadSavedResult(savedFundCode);
+  }, [analysis.loadSavedResult]);
+
+  useEffect(() => {
+    const code = analysis.result?.fund_code;
+    if (analysis.uiState !== "success" || !/^\d{6}$/.test(code || "")) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("result") === code) return;
+    url.searchParams.set("result", code);
+    window.history.replaceState(null, "", url);
+  }, [analysis.result, analysis.uiState]);
+
   return (
     <div className={`app-shell ${analysis.uiState}`}>
       <CinematicBackground state={backgroundState} />
       {analysis.uiState === "success" && analysis.result ? (
-        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+        <ResultDashboardBoundary onReset={resetToHome}>
           <ResultsDashboard
             data={analysis.result}
-            onReset={analysis.reset}
+            onReset={resetToHome}
             onAnalyze={analysis.startAnalysis}
           />
-        </Suspense>
+        </ResultDashboardBoundary>
       ) : (
         <Hero
           currentFundCode={analysis.fundCode}

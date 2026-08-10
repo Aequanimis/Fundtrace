@@ -78,6 +78,35 @@ export function useAnalysisJob() {
     }
   }, []);
 
+  const loadSavedResult = useCallback(async (fundCode) => {
+    if (!/^\d{6}$/.test(fundCode)) return;
+    setFundCode(fundCode);
+    const runId = activeRun.current + 1;
+    activeRun.current = runId;
+    setUiState("analyzing");
+    setJobStatus("rendering");
+    setElapsed(0);
+    setMessage("正在加载已保存的分析结果");
+    setResult(null);
+    setError(null);
+    try {
+      const data = await getResults(fundCode);
+      if (activeRun.current === runId) {
+        setResult(data);
+        setUiState("success");
+      }
+    } catch (reason) {
+      if (activeRun.current !== runId) return;
+      setError({
+        message: "已保存的分析结果暂时无法读取。",
+        code: reason.code || "RESULT_LOAD_ERROR",
+        canUseLocalData: false,
+        fundCode,
+      });
+      setUiState("error");
+    }
+  }, []);
+
   const reset = useCallback(() => {
     activeRun.current += 1;
     setUiState("idle");
@@ -95,6 +124,7 @@ export function useAnalysisJob() {
     result,
     error,
     startAnalysis,
+    loadSavedResult,
     reset,
   };
 }
