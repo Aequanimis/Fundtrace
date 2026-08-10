@@ -27,6 +27,10 @@ frontend/node_modules/
 .DS_Store
 Thumbs.db
 
+# Local launcher runtime logs
+/logs/startup*.log
+/logs/startup-stage.tmp
+
 # Runtime outputs are not the regression source of truth.
 output/*
 !output/161005/

@@ -1,0 +1,82 @@
+FundTrace Windows startup diagnostic
+Recorded: 2026-08-10 (Asia/Shanghai)
+
+1. Project path
+C:\Users\lvdon\Desktop\Fullgoal\AI培训\AI 课题\Fundtrace_mvp_pre_ui
+
+2. Windows version
+Windows 10 Home China; version 2009; OS build 22631
+
+3. where py
+Not found (exit code 1).
+
+4. where python
+C:\Users\lvdon\AppData\Local\Microsoft\WindowsApps\python.exe
+This is a Windows Store execution alias, not a usable Python runtime.
+
+5. py --list / py -0p
+py launcher not found.
+
+6. py -3.12 --version
+Failed: py command not found.
+
+7. python --version
+No version returned; Windows Store execution alias exited with code 9009.
+
+Additional checks
+- where python3: C:\Users\lvdon\AppData\Local\Microsoft\WindowsApps\python3.exe
+- python3 --version: no version returned; exit code 9009
+- where pip: not found
+- pip --version: command not found
+- winget --version: v1.29.280
+
+8. .venv exists
+No.
+
+9. .venv Python version
+Not available because .venv does not exist.
+
+10. requirements-lock.txt exists
+Yes.
+
+11. Startup failure stage
+VENV_CREATION: the original launcher did not find py, then treated the Windows Store
+python.exe alias as a usable runtime. `python -m venv .venv` exited with code 9009.
+
+Additional registered-runtime check
+- HKCU PythonCore 3.12 install path: D:\ANA
+- D:\ANA\python.exe --version: Python 3.12.7
+- Runtime vendor string: packaged by Anaconda, Inc. (pre-existing installation)
+- The runtime is valid but is not present on PATH and has no py launcher.
+
+Classification
+CASE_A: PYTHON_312_AVAILABLE
+
+Final root cause
+The original BAT only checked `py` and PATH-visible `python`. It did not validate the
+Windows Store alias and did not discover the registered Python 3.12 runtime at D:\ANA.
+After environment creation, its FastAPI wrapper also passed the Chinese absolute project
+path through incompatible command encodings. The service wrapper therefore exited before
+the server could bind. The repaired launcher uses a relative executable path and UTF-8.
+
+Official installer check
+winget identified the official Python.Python.3.12 package, but its attempted silent
+installation made no system change because Python 3.12 was already registered. No
+additional Python installation is required; the launcher will use the existing 3.12.7
+runtime only to create the isolated project .venv.
+
+Broken venv
+No. There was no .venv to remove.
+
+Repair verification
+- .venv created automatically: yes
+- .venv Python: Python 3.12.7
+- requirements-lock.txt verification: passed with exact versions
+- dependency installation: passed
+- FastAPI listener: 127.0.0.1:8765
+- /api/health: HTTP 200; FASTAPI_HEALTHCHECK_OK
+- /: HTTP 200
+- UI smoke test: Hero, fund-code input, and Start Analysis button present
+- second launch: reused .venv; no venv creation and no pip installation
+- model analysis executed: no
+- calibration executed: no
