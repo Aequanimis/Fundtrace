@@ -20,11 +20,37 @@ import {
   YAxis,
 } from "recharts";
 
-const LINE_COLORS = ["#4DA3FF", "#FFB547", "#2DD4BF", "#E879F9", "#A3E635", "#FB7185", "#A78BFA", "#38BDF8"];
-const FONT_SCALES = [90, 100, 115, 130];
+export const TREND_COLORS = ["#4DA3FF", "#FFB547", "#2DD4BF", "#E879F9", "#A3E635", "#FB7185", "#A78BFA", "#38BDF8"];
+export const FONT_SCALES = [90, 100, 115, 130];
 const FONT_SCALE_KEY = "fundtrace-font-scale";
 const percentage = (value, digits = 1) => `${((value || 0) * 100).toFixed(digits)}%`;
 const points = (value) => `${value >= 0 ? "+" : ""}${((value || 0) * 100).toFixed(1)}pp`;
+
+export function readFontScale(storage) {
+  const stored = Number(storage.getItem(FONT_SCALE_KEY));
+  return FONT_SCALES.includes(stored) ? stored : 115;
+}
+
+export function persistFontScale(storage, value) {
+  storage.setItem(FONT_SCALE_KEY, String(value));
+}
+
+export function resolveSelectedColors(selected, industryColors) {
+  const used = new Set();
+  return Object.fromEntries(selected.map((industry) => {
+    const preferred = Math.max(0, TREND_COLORS.indexOf(industryColors[industry]));
+    let color = industryColors[industry];
+    for (let offset = 0; offset < TREND_COLORS.length; offset += 1) {
+      const candidate = TREND_COLORS[(preferred + offset) % TREND_COLORS.length];
+      if (!used.has(candidate)) {
+        color = candidate;
+        break;
+      }
+    }
+    used.add(color);
+    return [industry, color];
+  }));
+}
 
 function MetricCard({ eyebrow, value, detail }) {
   return (
@@ -132,31 +158,16 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
   const [showAll, setShowAll] = useState(false);
   const defaults = data.top_industries.slice(0, 5).map((item) => item.industry);
   const [selected, setSelected] = useState(defaults);
-  const [fontScale, setFontScale] = useState(() => {
-    const stored = Number(window.localStorage.getItem(FONT_SCALE_KEY));
-    return FONT_SCALES.includes(stored) ? stored : 115;
-  });
+  const [fontScale, setFontScale] = useState(() => readFontScale(window.localStorage));
   const chartIndustries = showAll ? data.all_industries : data.top_industries;
   const industryColors = useMemo(
-    () => Object.fromEntries(data.all_industries.map((item, index) => [item.industry, LINE_COLORS[index % LINE_COLORS.length]])),
+    () => Object.fromEntries(data.all_industries.map((item, index) => [item.industry, TREND_COLORS[index % TREND_COLORS.length]])),
     [data.all_industries],
   );
-  const selectedColors = useMemo(() => {
-    const used = new Set();
-    return Object.fromEntries(selected.map((industry) => {
-      const preferred = Math.max(0, LINE_COLORS.indexOf(industryColors[industry]));
-      let color = industryColors[industry];
-      for (let offset = 0; offset < LINE_COLORS.length; offset += 1) {
-        const candidate = LINE_COLORS[(preferred + offset) % LINE_COLORS.length];
-        if (!used.has(candidate)) {
-          color = candidate;
-          break;
-        }
-      }
-      used.add(color);
-      return [industry, color];
-    }));
-  }, [industryColors, selected]);
+  const selectedColors = useMemo(
+    () => resolveSelectedColors(selected, industryColors),
+    [industryColors, selected],
+  );
   const chartFontSize = Math.round(11 * fontScale / 100);
   const trendData = useMemo(
     () => data.trend.map((row) => ({ date: row.date.slice(5), ...row.values })),
@@ -171,7 +182,7 @@ export function ResultsDashboard({ data, onReset, onAnalyze }) {
   };
 
   useEffect(() => {
-    window.localStorage.setItem(FONT_SCALE_KEY, String(fontScale));
+    persistFontScale(window.localStorage, fontScale);
   }, [fontScale]);
 
   const scrollToDownloads = () => document.getElementById("downloads")?.scrollIntoView({ behavior: "smooth" });
