@@ -6,7 +6,7 @@ set "PYTHONUTF8=1"
 set "PYTHON_EXE=%CD%\.venv\Scripts\python.exe"
 set "LOG_DIR=%CD%\logs"
 set "STARTUP_LOG=%LOG_DIR%\startup.log"
-set "STAGE_LOG=%LOG_DIR%\startup-stage.tmp"
+set "STAGE_LOG=%LOG_DIR%\startup-stage-%RANDOM%-%RANDOM%.tmp"
 set "PYTHON_BOOTSTRAP="
 set "PYTHON_DISPLAY="
 set "PYTHON_VERSION="
@@ -88,6 +88,35 @@ call :record_stage dependency_verification "%PYTHON_EXE% tools\check_locked_envi
 if not "!RC!"=="0" goto :dependency_failed
 
 :dependencies_ready
+call :current_runtime_identity
+call :log runtime_identity "expected_commit=!CURRENT_GIT_COMMIT! branch=!CURRENT_GIT_BRANCH!"
+call :log runtime_port_guard "Checking port 8765 before starting FundTrace"
+"%PYTHON_EXE%" "tools\runtime_port_guard.py" --expected-commit "!CURRENT_GIT_COMMIT!" >"%STAGE_LOG%" 2>&1
+set "PORT_GUARD_RC=!ERRORLEVEL!"
+call :record_stage runtime_port_guard "%PYTHON_EXE% tools\runtime_port_guard.py --expected-commit !CURRENT_GIT_COMMIT!" "!PORT_GUARD_RC!"
+if "!PORT_GUARD_RC!"=="10" (
+  echo [FundTrace] Current FundTrace is already running on port 8765.
+  echo [FundTrace] Opening the matching local version...
+  call :log runtime_port_guard "classification=CURRENT_RUNTIME_REUSED commit=!CURRENT_GIT_COMMIT!"
+  start "" "http://127.0.0.1:8765/"
+  exit /b 0
+)
+if "!PORT_GUARD_RC!"=="20" (
+  echo [FundTrace] ERROR: Port 8765 is occupied by another application.
+  echo [FundTrace] FundTrace was not started and the other application was not stopped.
+  echo [FundTrace] Log: %STARTUP_LOG%
+  call :log failure "classification=PORT_8765_OCCUPIED_BY_OTHER_APP"
+  pause
+  exit /b 1
+)
+if not "!PORT_GUARD_RC!"=="0" (
+  echo [FundTrace] ERROR: Could not safely resolve the existing service on port 8765.
+  echo [FundTrace] Log: %STARTUP_LOG%
+  call :log failure "classification=RUNTIME_PORT_GUARD_FAILED exit_code=!PORT_GUARD_RC!"
+  pause
+  exit /b 1
+)
+
 if not exist "frontend\dist\index.html" (
   set "RC=1"
   >"%STAGE_LOG%" echo Missing frontend\dist\index.html.
@@ -98,7 +127,9 @@ if not exist "frontend\dist\index.html" (
 echo [FundTrace] Starting FundTrace...
 echo [FundTrace] URL: http://127.0.0.1:8765/
 call :log fastapi_start "command=%PYTHON_EXE% tools\run_server_logged.py; host=127.0.0.1; port=8765"
-start "" /b powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:8765/'"
+set "FUNDTRACE_GIT_COMMIT=!CURRENT_GIT_COMMIT!"
+set "FUNDTRACE_GIT_BRANCH=!CURRENT_GIT_BRANCH!"
+set "FUNDTRACE_OPEN_BROWSER=1"
 "%PYTHON_EXE%" "tools\run_server_logged.py"
 set "RC=!ERRORLEVEL!"
 call :log fastapi_exit "exit_code=!RC!"
@@ -158,6 +189,13 @@ if defined REGISTERED_PYTHON_DIR (
   )
 )
 exit /b 1
+
+:current_runtime_identity
+set "CURRENT_GIT_COMMIT=unknown"
+set "CURRENT_GIT_BRANCH=unknown"
+for /f "delims=" %%G in ('git rev-parse HEAD 2^>nul') do set "CURRENT_GIT_COMMIT=%%G"
+for /f "delims=" %%G in ('git branch --show-current 2^>nul') do set "CURRENT_GIT_BRANCH=%%G"
+exit /b 0
 
 :record_stage
 if exist "%STAGE_LOG%" type "%STAGE_LOG%"

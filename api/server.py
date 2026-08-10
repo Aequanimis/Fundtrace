@@ -20,6 +20,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from api.presentation import build_presentation
+from api.runtime_identity import get_runtime_identity
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -177,7 +178,7 @@ def submit_job(job_id: str) -> None:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "host": "127.0.0.1"}
+    return {"status": "ok", "host": "127.0.0.1", **get_runtime_identity()}
 
 
 @app.post("/api/analyze", status_code=202)

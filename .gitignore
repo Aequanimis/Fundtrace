@@ -29,7 +29,7 @@ Thumbs.db
 
 # Local launcher runtime logs
 /logs/startup*.log
-/logs/startup-stage.tmp
+/logs/startup-stage*.tmp
 /logs/fetch_*.log
 
 # Per-fund runtime data created by first-time public-data initialization.

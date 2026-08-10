@@ -7,6 +7,21 @@ afterEach(() => {
 });
 
 describe("FundTrace UI", () => {
+  it("shows the connected backend build without exposing local paths", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: "ok",
+      app: "FundTrace",
+      git_commit: "1ccbb8f4412bb4881230412172ccf4283b903872",
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })));
+    render(<App />);
+
+    expect(await screen.findByLabelText("FundTrace build"))
+      .toHaveTextContent("FundTrace v1.2 · Build 1ccbb8f");
+  });
+
   it("renders the cinematic hero and fund-code entry", () => {
     render(<App />);
     expect(screen.getByText("看见披露空窗期里的变化")).toBeInTheDocument();
@@ -44,6 +59,12 @@ describe("FundTrace UI", () => {
       status: 422,
       headers: { "Content-Type": "application/json" },
     })));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
+      detail: "\u6d4b\u8bd5\u8bf7\u6c42\u65e0\u6548",
+    }), {
+      status: 422,
+      headers: { "Content-Type": "application/json" },
+    }))));
     render(<App />);
 
     fireEvent.change(screen.getByLabelText("基金代码"), { target: { value: "161005" } });

@@ -13,7 +13,22 @@ def setup_function():
 
 def test_health_and_invalid_code_rejection(monkeypatch):
     client = TestClient(server.app)
-    assert client.get("/api/health").json()["host"] == "127.0.0.1"
+    monkeypatch.setattr(
+        server,
+        "get_runtime_identity",
+        lambda: {
+            "app": "FundTrace",
+            "git_commit": "1ccbb8f",
+            "branch": "fix/new-fund-fetch",
+            "project_root": "Fundtrace_mvp_pre_ui",
+            "python_executable": ".venv/Scripts/python.exe",
+        },
+    )
+    health = client.get("/api/health").json()
+    assert health["host"] == "127.0.0.1"
+    assert health["app"] == "FundTrace"
+    assert health["git_commit"] == "1ccbb8f"
+    assert health["project_root"] == "Fundtrace_mvp_pre_ui"
     for invalid in ("16100", "1610057", "../161005", "161005;calc"):
         assert client.post("/api/analyze", json={"fund_code": invalid}).status_code == 422
     assert server.JOBS == {}

@@ -47,6 +47,10 @@ export function getJob(jobId) {
   return request(`/api/jobs/${jobId}`, undefined, "任务状态请求");
 }
 
+export function getRuntimeIdentity() {
+  return request("/api/health", undefined, "Runtime check");
+}
+
 export function getResults(fundCode) {
   return request(`/api/results/${fundCode}`, undefined, "结果读取");
 }
