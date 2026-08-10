@@ -51,10 +51,12 @@ export function useAnalysisJob() {
           return;
         }
         if (job.status === "error") {
-          const dataUpdateFailed = Boolean(job.can_use_local_data)
-            || job.message?.includes("数据更新失败");
+          const dataUpdateFailed = Boolean(job.error_code?.startsWith("PUBLIC_"))
+            || Boolean(job.can_use_local_data)
+            || job.message?.includes("公开");
+          const fallbackSuffix = job.can_use_local_data ? " 可尝试使用本地数据。" : "";
           const errorMessage = dataUpdateFailed
-            ? "公开数据更新失败，可尝试使用本地数据。"
+            ? `${job.message || "公开数据更新失败。"}${fallbackSuffix}`
             : "分析运行失败，可查看高级日志。";
           throw Object.assign(new Error(errorMessage), {
             code: dataUpdateFailed ? "DATA_UPDATE_ERROR" : "ANALYSIS_ERROR",

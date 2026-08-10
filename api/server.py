@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 import subprocess
 import sys
 import threading
@@ -48,6 +49,8 @@ class JobRecord:
     updated_at: float = 0.0
     analysis_seconds: float | None = None
     can_use_local_data: bool = False
+    error_stage: str | None = None
+    error_code: str | None = None
 
     def public(self) -> dict:
         end = self.updated_at if self.status in {"complete", "error"} else time.monotonic()
@@ -97,6 +100,28 @@ def execute_command(command: list[str], log_path: Path, timeout: int = 7200) -> 
     return result
 
 
+def parse_fetch_error(result: subprocess.CompletedProcess) -> dict:
+    def decoded(value) -> str:
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return str(value or "")
+
+    text = decoded(result.stdout) + "\n" + decoded(result.stderr)
+    matches = re.findall(r"FETCH_ERROR_JSON\s+(\{.*\})", text)
+    if matches:
+        try:
+            payload = json.loads(matches[-1])
+            if isinstance(payload, dict):
+                return payload
+        except json.JSONDecodeError:
+            pass
+    return {
+        "stage": "OTHER",
+        "code": "PUBLIC_FUND_FETCH_FAILED",
+        "message": "公开基金数据获取失败",
+    }
+
+
 def run_analysis_job(job_id: str) -> None:
     with JOB_LOCK:
         job = JOBS[job_id]
@@ -109,11 +134,14 @@ def run_analysis_job(job_id: str) -> None:
             fetch = execute_command([sys.executable, str(FETCH_FUND), code], log_path)
             if fetch.returncode != 0:
                 local_available = _has_local_data(code)
+                error = parse_fetch_error(fetch)
                 _set_job(
                     job_id,
                     status="error",
-                    message="数据更新失败",
+                    message=error.get("message") or "公开基金数据获取失败",
                     can_use_local_data=local_available,
+                    error_stage=error.get("stage") or "OTHER",
+                    error_code=error.get("code") or "PUBLIC_FUND_FETCH_FAILED",
                 )
                 return
         if not _has_local_data(code):

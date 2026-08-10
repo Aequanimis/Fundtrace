@@ -67,8 +67,10 @@ def test_update_failure_offers_local_fallback(tmp_path, monkeypatch):
     server.JOBS["job"] = server.JobRecord("job", "161005", True, created_at=now, updated_at=now)
     server.run_analysis_job("job")
     assert server.JOBS["job"].status == "error"
-    assert server.JOBS["job"].message == "数据更新失败"
+    assert server.JOBS["job"].message == "公开基金数据获取失败"
     assert server.JOBS["job"].can_use_local_data is True
+    assert server.JOBS["job"].error_stage == "OTHER"
+    assert server.JOBS["job"].error_code == "PUBLIC_FUND_FETCH_FAILED"
 
 
 def test_execute_command_always_disables_shell(tmp_path, monkeypatch):
