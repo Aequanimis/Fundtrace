@@ -85,3 +85,7 @@ python tools/check_production_regression.py 161005
 - Research branches：披露和 equity-cap 实验资产，不合并进 MVP
 
 更多状态见 [MVP_STATUS.md](docs/development/MVP_STATUS.md)、[VERSION_HISTORY.md](docs/development/VERSION_HISTORY.md) 和 [RESEARCH_BACKLOG.md](docs/research/RESEARCH_BACKLOG.md)。
+
+## Windows 便携版
+
+面向普通用户的发布物为 GitHub Release 中的 `FundTrace_Windows_Portable_V1.2.zip`。完整解压后双击 `启动FundTrace.bat` 即可使用，不需要安装 Python、Node.js、pip 或配置 PATH。源码仓库仍使用开发版启动器和 `.venv`；便携包的构建与验收规则见 [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md)。

@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import threading
 import time
 import urllib.error
 import urllib.request
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 
@@ -46,7 +48,10 @@ def wait_for_http(process: subprocess.Popen[str], url: str, timeout: float) -> i
 
 
 def main() -> int:
-    log_path = ROOT / "logs" / "startup.log"
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    configured_log = os.environ.get("FUNDTRACE_STARTUP_LOG")
+    log_path = Path(configured_log).resolve() if configured_log else ROOT / "logs" / "startup.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     append_log(log_path, "stage=fastapi_process command=python -m api.server")
     process = subprocess.Popen(
@@ -82,6 +87,9 @@ def main() -> int:
     home_status = wait_for_http(process, HOME_URL, timeout=5)
     append_log(log_path, f"stage=homepage HTTP_STATUS={home_status}")
     print("[FundTrace] FASTAPI_HEALTHCHECK_OK (HTTP 200)", flush=True)
+    if home_status == 200 and os.environ.get("FUNDTRACE_OPEN_BROWSER") == "1":
+        webbrowser.open(HOME_URL)
+        append_log(log_path, "stage=browser_open URL=http://127.0.0.1:8765/")
 
     try:
         return_code = process.wait()
